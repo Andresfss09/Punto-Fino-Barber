@@ -7,8 +7,8 @@ import {
 
 export default function PublicBookingView() {
   const [step, setStep] = useState(1);
-  const [selectedServices, setSelectedServices] = useState(['corte-fino']);
-  const [selectedBarber, setSelectedBarber] = useState('brayan');
+  const [selectedServices, setSelectedServices] = useState(['exp-punto-fino']);
+  const [selectedBarber, setSelectedBarber] = useState('juan-david');
   const [selectedDate, setSelectedDate] = useState('2026-10-18');
   const [selectedTime, setSelectedTime] = useState('03:30 PM');
   const [holdTimer, setHoldTimer] = useState(480); // 8 minutos en segundos
@@ -23,42 +23,51 @@ export default function PublicBookingView() {
   const [showLegalModal, setShowLegalModal] = useState(false);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
 
-  // Servicios disponibles
+  // Servicios disponibles oficiales de Punto Fino
   const services = [
     {
-      id: 'corte-fino',
-      name: 'Corte Clásico Punto Fino',
-      desc: 'Degradado a navaja, perfilado de cerquillo, lavado capilar y peinado con pomada mate.',
-      duration: 40,
-      price: 25000,
-      badge: 'Más pedido'
+      id: 'exp-punto-fino',
+      name: 'Experiencia Punto Fino (Corte + Cejas)',
+      desc: 'Degradado a navaja milimétrico, perfilado de cerquillo, diseño y limpieza de cejas con acabado profesional.',
+      duration: 35,
+      price: 24000,
+      badge: 'Popular · Recomendado'
+    },
+    {
+      id: 'exp-pf-barba',
+      name: 'Experiencia Punto Fino + Ritual de Barba',
+      desc: 'Corte completo con perfilado de cerquillo y cejas, combinado con ritual de barba, toalla caliente y aceites.',
+      duration: 45,
+      price: 34000,
+      badge: 'Popular'
+    },
+    {
+      id: 'exp-platinium',
+      name: 'Experiencia Platinium (VIP Todo Incluido)',
+      desc: 'Servicio VIP integral: corte a tijera o degradado, ritual completo de barba, perfilado de cejas y exfoliación.',
+      duration: 60,
+      price: 55000,
+      badge: '15% OFF'
     },
     {
       id: 'ritual-barba',
-      name: 'Ritual Barba con Vapor de Ozono',
-      desc: 'Toalla caliente, exfoliación, perfilado con navaja japonesa y aceite hidratante artesanal.',
-      duration: 35,
-      price: 22000,
-      badge: 'Ritual'
-    },
-    {
-      id: 'combo-completo',
-      name: 'Combo Completo: Corte + Barba + Masaje',
-      desc: 'Experiencia completa: degradado, barba vaporizada, exfoliación facial y masaje percutor.',
-      duration: 75,
-      price: 45000,
-      badge: 'Ahorro $ 2.000'
-    },
-    {
-      id: 'masaje-facial',
-      name: 'Exfoliación & Masaje Percutivo',
-      desc: 'Masaje relajante en sienes y cuello, limpieza de poros con vapor y mascarilla dorada.',
+      name: 'Ritual de Barba',
+      desc: 'Toalla caliente aromatizada, vapor de ozono, perfilado a navaja tradicional y bálsamo hidratante para piel fresca.',
       duration: 25,
-      price: 20000,
+      price: 12000,
+      badge: 'Popular'
+    },
+    {
+      id: 'cejas',
+      name: 'Cejas',
+      desc: 'Limpieza, diseño milimétrico y perfilado con navaja fina para resaltar la mirada con máxima precisión.',
+      duration: 15,
+      price: 5000,
+      badge: 'Detalle Rápido'
     }
   ];
 
-  // Barberos del equipo real
+  // Barberos del equipo real de Punto Fino
   const barbers = [
     {
       id: 'any',
@@ -67,34 +76,37 @@ export default function PublicBookingView() {
       specialty: 'Cualquier barbero del equipo según tu hora preferida',
       rating: '5.0',
       cutsCount: '1.2k',
-      image: '/images/punto-fino/corte-degradado-navaja.png'
+      image: '/images/punto-fino/corte-fade-real.png'
     },
     {
-      id: 'brayan',
-      name: 'Brayan Murillo',
-      nickname: 'El Fino',
-      specialty: 'Especialista en degradados milimétricos (skin fade, taper) y diseño de líneas',
+      id: 'juan-david',
+      name: 'Juan David',
+      nickname: 'Barbero & Administrador',
+      monogram: 'Jd',
+      specialty: 'Especialista en Experiencia Punto Fino, visagismo masculino y degradados pulidos',
       rating: '4.9',
-      cutsCount: '340',
-      image: '/images/punto-fino/ritual-vapor-ozono.png'
+      cutsCount: '650+',
+      image: '/images/punto-fino/equipo-barberos-real.png'
     },
     {
-      id: 'carlos',
-      name: 'Carlos Valencia',
-      nickname: 'El Primo',
-      specialty: 'Maestro en arreglo de barba con vapor de ozono y toalla caliente',
+      id: 'emanuel-torres',
+      name: 'Emanuel Torres',
+      nickname: 'Barbero Profesional',
+      monogram: 'et',
+      specialty: 'Especialista en Ritual de Barba tradicional con toalla caliente y fade en tendencia',
       rating: '4.9',
-      cutsCount: '412',
-      image: '/images/punto-fino/vapor-facial-cali.png'
+      cutsCount: '480+',
+      image: '/images/punto-fino/ritual-vapor-real.png'
     },
     {
-      id: 'andres',
-      name: 'Andrés Mosquera',
-      nickname: 'Junior',
-      specialty: 'Cortes clásicos a tijera y tratamientos capilares revitalizantes',
-      rating: '4.8',
-      cutsCount: '290',
-      image: '/images/punto-fino/masaje-percutivo-relax.png'
+      id: 'juan-diego',
+      name: 'Juan Diego',
+      nickname: 'Barbero Máster',
+      monogram: 'JD',
+      specialty: 'Especialista en Experiencia Platinium VIP, corte a tijera y perfilado de cejas',
+      rating: '5.0',
+      cutsCount: '520+',
+      image: '/images/punto-fino/servicios-catalogo-real.png'
     }
   ];
 

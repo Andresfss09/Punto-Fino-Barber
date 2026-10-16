@@ -508,13 +508,11 @@ exports.createWalkInAppointment = async (req, res) => {
       return sendError(res, 400, 'Nombre del cliente y al menos un servicio son requeridos.');
     }
 
-    // Si quien llama es barbero, asignar automáticamente a su silla
-    let barberId = paramBarberId;
-    if (req.user.role === 'BARBER') {
-      if (!req.user.barberProfile) {
-        return sendError(res, 403, 'Perfil de barbero no encontrado.');
-      }
-      barberId = req.user.barberProfile.id;
+    // Si quien llama tiene perfil de barbero (Barbero o Admin-Barbero), asignar a su silla
+    let barberId = paramBarberId || req.user?.barberProfile?.id;
+    if (!barberId) {
+      const firstBarber = await prisma.barberProfile.findFirst({ where: { isActive: true } });
+      barberId = firstBarber?.id;
     }
 
     if (!barberId) {

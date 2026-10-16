@@ -39,12 +39,12 @@ async function runTests() {
   let walkInAppointment;
 
   // TEST 1: Login de Barbero
-  await test('1. Autenticación del barbero Brayan Murillo "El Fino"', async () => {
+  await test('1. Autenticación del barbero Juan David (Barbero & Admin)', async () => {
     const res = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        phoneOrEmail: 'brayan@puntofino.com',
+        phoneOrEmail: 'juandavid@puntofino.com',
         password: 'Barbero2026!',
       }),
     });
@@ -55,7 +55,7 @@ async function runTests() {
     assert(data.token, 'Debe devolver JWT token');
     brayanToken = data.token;
     brayanUser = data.user;
-    assert.strictEqual(brayanUser.role, 'BARBER');
+    assert(brayanUser.role === 'ADMIN' || brayanUser.role === 'BARBER', 'Debe ser ADMIN o BARBER');
   });
 
   // TEST 2: Vinculación de dispositivo móvil con biometría
@@ -92,7 +92,7 @@ async function runTests() {
     const data = await res.json();
     assert.strictEqual(res.status, 200, `Esperado 200, recibido ${res.status}`);
     assert(data.success);
-    assert(data.barber.nickname === 'El Fino');
+    assert(data.barber.nickname.includes('Juan David') || data.barber.nickname.includes('El Fino'));
     assert(data.stats, 'Debe incluir objeto de estadísticas');
     assert(Array.isArray(data.appointments), 'Debe devolver lista de citas');
   });

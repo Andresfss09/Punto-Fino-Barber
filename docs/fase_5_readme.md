@@ -128,3 +128,4 @@ Las capturas generadas con motor Chromium en resolución 1400x950 se encuentran 
 4. `04_panel_admin_inventario_insumos.png`: Inventario con alertas de stock bajo en cuchillas descartables y botón de reabastecimiento.
 5. `05_panel_admin_nomina_comisiones.png`: Planilla quincenal de comisiones al 50% con propinas y advertencia legal.
 6. `06_panel_admin_directorio_clientes.png`: Directorio de clientes con tarjeta de sellos digital y fórmulas técnicas privadas.
+

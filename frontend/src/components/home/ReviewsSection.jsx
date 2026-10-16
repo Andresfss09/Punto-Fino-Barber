@@ -6,26 +6,26 @@ const REVIEWS = [
   { 
     id: 1, 
     name: 'Carlos Alberto Gómez', 
-    service: 'Combo Completo Triadix',
-    date: 'Septiembre 2026',
+    service: 'Experiencia Punto Fino + Ritual de Barba ($34.000)',
+    date: 'Octubre 2026',
     rating: 5, 
-    text: 'Excelente servicio por parte de Andrés Felipe. La toalla caliente, la mascarilla facial y el corte quedaron de 10. Muy recomendado, te atienden puntual y el lugar es impecable.' 
+    text: 'Excelente servicio por parte de Juan David. El corte quedó impecable, la toalla caliente y el vapor de ozono en la barba relajan muchísimo. Puntualidad inglesa y ambiente de barrio muy agradable.' 
   },
   { 
     id: 2, 
     name: 'Camilo Andrés Mora', 
-    service: 'Corte de Cabello + Arreglo de Barba',
-    date: 'Septiembre 2026',
+    service: 'Ritual de Barba a Navaja ($12.000)',
+    date: 'Octubre 2026',
     rating: 5, 
-    text: 'Puntualidad impecable y trato de primera por parte de Nicolás Chávez. El arreglo de barba con navaja y aceites deja la piel fresca y sin irritación. Sin duda la mejor barbería en Cali.' 
+    text: 'Puntualidad de diez y trato de primera por parte de Emanuel Torres. El afeitado a navaja tradicional con aceites hidratantes no me irritó nada la piel. Sin duda la mejor barbería del Tequendama.' 
   },
   { 
     id: 3, 
     name: 'Felipe Benítez', 
-    service: 'Corte de Cabello + Cejas',
-    date: 'Agosto 2026',
+    service: 'Experiencia Platinium VIP ($55.000)',
+    date: 'Septiembre 2026',
     rating: 5, 
-    text: 'El degradado y el perfilado de cejas realizado por Luis De Ávila quedó perfecto. Muy buena vibra, música agradable y atención de calidad desde que entras.' 
+    text: 'El servicio Platinium con Juan Diego es otro nivel: corte a tijera con textura, perfilado milimétrico de cejas, exfoliación y masaje. Salí renovado. 100% recomendados.' 
   },
 ];
 
@@ -36,16 +36,16 @@ export default function ReviewsSection() {
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <div className="flex items-center justify-center gap-2.5 mb-3">
-            <span className="w-2.5 h-2.5 bg-[#cfa53b]"></span>
-            <span className="font-sans text-xs sm:text-sm uppercase tracking-[0.26em] text-[#cfa53b] font-bold">
-              05 · TESTIMONIOS VERIFICADOS · 4.9 ★ CLIENTES TRIADIX
+            <span className="w-2.5 h-2.5 bg-[#B89758]"></span>
+            <span className="font-mono text-xs sm:text-sm uppercase tracking-[0.24em] text-[#B89758] font-bold">
+              05 · TESTIMONIOS VERIFICADOS · 4.9 ★ CLIENTES PUNTO FINO
             </span>
           </div>
           <h2 className="font-sans uppercase text-4xl sm:text-5xl lg:text-6xl text-white font-black tracking-normal sm:tracking-[0.02em]">
-            La Voz de Nuestros Clientes
+            La Voz del Barrio
           </h2>
           <p className="font-sans text-sm sm:text-base text-[#aaaaaa] mt-4 max-w-xl mx-auto">
-            Calificación 4.9 / 5.0 basada en opiniones reales de clientes que se cortan en Triadix.
+            Calificación 4.9 / 5.0 basada en opiniones reales de clientes que confían su estilo en Punto Fino.
           </p>
         </div>
 

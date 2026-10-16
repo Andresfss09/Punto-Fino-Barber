@@ -27,27 +27,27 @@ export default function Footer() {
           <div className="md:col-span-1 space-y-4">
             <div className="flex items-center gap-3.5">
               <img
-                src="/logo.png"
-                alt="Barbería Triadix"
-                className="w-12 h-12 object-contain rounded-none border border-[#222222] p-1 bg-[#0d0d0d] shadow-md"
+                src="/images/punto-fino/logo.png"
+                alt="Punto Fino Barbería"
+                className="w-12 h-12 object-contain rounded-none border border-[#333333] p-1 bg-[#0d0d0d] shadow-md"
               />
               <div>
                 <h3 className="font-sans text-lg font-bold tracking-[0.2em] uppercase text-white leading-tight">
-                  Triadix
+                  Punto Fino
                 </h3>
-                <span className="text-xs text-gold-400 tracking-[0.22em] font-semibold uppercase block mt-0.5">
+                <span className="font-mono text-xs text-[#B89758] tracking-[0.22em] font-semibold uppercase block mt-0.5">
                   Barbería · Cali
                 </span>
               </div>
             </div>
             <p className="text-[#999999] text-sm leading-relaxed max-w-sm font-sans">
-              Barbería dedicada al buen corte, degradados limpios, afeitado tradicional a navaja y la mejor atención en Cali.
+              Barbería de barrio en Santiago de Cali dedicada al buen oficio: degradados milimétricos, rituales de barba con toalla caliente y atención cercana.
             </p>
           </div>
 
           {/* Column 2 - Navigation */}
           <div className="space-y-4">
-            <h4 className="font-sans text-xs uppercase tracking-[0.22em] text-white font-bold">
+            <h4 className="font-mono text-xs uppercase tracking-[0.22em] text-[#B89758] font-bold">
               Explorar
             </h4>
             <ul className="space-y-2 text-xs font-sans">
@@ -73,7 +73,7 @@ export default function Footer() {
                 <a
                   href="#reservar"
                   onClick={(e) => handleNavClick(e, 'reservar')}
-                  className="text-gold-400 hover:text-gold-300 transition-colors uppercase tracking-wider text-[11px] cursor-pointer"
+                  className="text-[#B89758] hover:text-white transition-colors uppercase tracking-wider text-[11px] cursor-pointer font-bold"
                 >
                   Agendar Cita en Línea
                 </a>
@@ -88,8 +88,8 @@ export default function Footer() {
 
           {/* Column 3 - Schedule */}
           <div className="space-y-3">
-            <h4 className="font-sans text-[11px] uppercase tracking-[0.22em] text-white font-medium flex items-center gap-1.5">
-              <Clock size={13} className="text-gold-400" /> Horarios de Atención
+            <h4 className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#B89758] font-bold flex items-center gap-1.5">
+              <Clock size={13} className="text-[#B89758]" /> Horarios de Atención
             </h4>
             <ul className="space-y-2 text-xs font-sans text-[#888888]">
               <li className="flex justify-between max-w-[240px] pb-1 border-b border-[#1e1e1e]">
@@ -102,7 +102,7 @@ export default function Footer() {
               </li>
               <li className="flex justify-between max-w-[240px] pb-1 border-b border-[#1e1e1e]">
                 <span>Domingos</span>
-                <span className="font-mono text-gold-400">09:00 - 16:00</span>
+                <span className="font-mono text-[#B89758] font-bold">09:00 - 16:00</span>
               </li>
               <li className="text-[10px] text-[#666666] pt-1 uppercase tracking-wider">
                 Atención con cita previa online
@@ -112,30 +112,30 @@ export default function Footer() {
 
           {/* Column 4 - Contact & Location */}
           <div className="space-y-3">
-            <h4 className="font-sans text-[11px] uppercase tracking-[0.22em] text-white font-medium flex items-center gap-1.5">
-              <MapPin size={13} className="text-gold-400" /> Ubicación & Citas
+            <h4 className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#B89758] font-bold flex items-center gap-1.5">
+              <MapPin size={13} className="text-[#B89758]" /> Ubicación & Citas
             </h4>
             <ul className="space-y-2.5 text-xs font-sans text-[#888888]">
               <li>
-                <span className="text-white block font-medium uppercase tracking-wider text-[11px]">Sede Triadix</span>
+                <span className="text-white block font-medium uppercase tracking-wider text-[11px]">Sede Tequendama</span>
                 <span className="text-[#aaaaaa] inline-block">
-                  Barbería Triadix · Cali, Valle del Cauca, Colombia
+                  Calle 5ta #38-24 · Santiago de Cali, Valle del Cauca
                 </span>
               </li>
               <li>
                 <a 
                   href="tel:+573122398964" 
-                  className="font-mono hover:text-gold-400 transition-colors flex items-center gap-2 text-white"
+                  className="font-mono hover:text-[#B89758] transition-colors flex items-center gap-2 text-white font-bold"
                 >
-                  <Phone size={13} className="text-gold-400" /> +57 312 239 8964
+                  <Phone size={13} className="text-[#B89758]" /> +57 312 239 8964
                 </a>
               </li>
               <li className="pt-1">
                 <a
-                  href="https://wa.me/573122398964?text=Hola,%20me%20gustar%C3%ADa%20agendar%20una%20cita%20en%20Triadix"
+                  href="https://wa.me/573122398964?text=Hola,%20me%20gustar%C3%ADa%20agendar%20una%20cita%20en%20Punto%20Fino"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-mono text-xs text-gold-400 hover:text-white underline underline-offset-4 flex items-center gap-1.5 transition-colors"
+                  className="font-mono text-xs text-[#B89758] hover:text-white underline underline-offset-4 flex items-center gap-1.5 transition-colors font-bold"
                 >
                   <MessageCircle size={14} /> WhatsApp Barbería
                 </a>
@@ -146,10 +146,10 @@ export default function Footer() {
 
         {/* Bottom Bar */}
         <div className="pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-sans text-[#666666]">
-          <p className="font-mono text-[11px]">© {new Date().getFullYear()} BARBERÍA TRIADIX · CALI, COLOMBIA. TODOS LOS DERECHOS RESERVADOS.</p>
+          <p className="font-mono text-[11px]">© {new Date().getFullYear()} PUNTO FINO BARBERÍA · CALI, VALLE DEL CAUCA. TODOS LOS DERECHOS RESERVADOS.</p>
           <div className="flex items-center gap-3">
-            <span className="font-sans uppercase tracking-[0.2em] text-[10px] text-[#888888]">
-              Cortes Modernos · Buena Vibra · Puntualidad
+            <span className="font-mono uppercase tracking-[0.2em] text-[10px] text-[#888888]">
+              Oficio de Barrio · Corte Fino · Buena Vibra
             </span>
           </div>
         </div>

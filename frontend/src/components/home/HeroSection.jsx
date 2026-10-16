@@ -6,30 +6,30 @@ import AnimatedCounter from '../ui/AnimatedCounter';
 const SLIDES = [
   {
     id: 1,
-    eyebrow: 'TU BARBERÍA EN CALI',
-    titleLine1: 'CORTES MODERNOS &',
-    titleLine2: 'DEGRADADOS FADE',
-    desc: 'Los mejores cortes clásicos y en tendencia. Fade limpio, textura a tijera y el estilo que estás buscando para tu día a día.',
-    buttonText: 'RESERVAR CORTE',
-    image: 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=1600&q=80',
+    eyebrow: 'BARBERÍA DE BARRIO · SANTIAGO DE CALI',
+    titleLine1: 'EXPERIENCIA',
+    titleLine2: 'PUNTO FINO',
+    desc: 'Corte de precisión a navaja y perfilado limpio de cejas ($ 24.000 COP). Oficio de barrio con Juan David, Emanuel Torres y Juan Diego.',
+    buttonText: 'RESERVAR TU SILLA',
+    image: '/images/punto-fino/corte-fade-real.png',
   },
   {
     id: 2,
-    eyebrow: 'ARREGLO DE BARBA',
-    titleLine1: 'AFEITADO A NAVAJA &',
+    eyebrow: 'RITUAL TRADICIONAL DE BARBA',
+    titleLine1: 'VAPOR DE OZONO &',
     titleLine2: 'TOALLA CALIENTE',
-    desc: 'Delineado perfecto, toalla caliente y aceites especiales para dejar tu barba suave, perfilada y con la mejor forma.',
+    desc: 'Perfilado al milímetro a navaja, hidratación con aceites botánicos y relajación facial profunda en el corazón de Cali ($ 12.000 COP).',
     buttonText: 'RESERVAR BARBA',
-    image: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1600&q=80',
+    image: '/images/punto-fino/ritual-vapor-real.png',
   },
   {
     id: 3,
-    eyebrow: 'EL COMBO FAVORITO',
-    titleLine1: 'CORTE COMPLETO +',
-    titleLine2: 'BARBA & CEJAS',
-    desc: 'El paquete completo para salir renovado. Atención puntual con Andrés, Nicolás o Luis y una bebida bien fría de cortesía.',
-    buttonText: 'RESERVAR COMBO',
-    image: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=1600&q=80',
+    eyebrow: 'EXPERIENCIA PLATINIUM VIP',
+    titleLine1: 'EL PAQUETE TOTAL',
+    titleLine2: 'CORTE, BARBA & FACIAL',
+    desc: 'La experiencia definitiva: corte personalizado, cejas, ritual completo de barba con vapor de ozono y toalla caliente por $ 55.000 COP.',
+    buttonText: 'RESERVAR PLATINIUM',
+    image: '/images/punto-fino/ritual-vapor-real.png',
   },
 ];
 
@@ -149,16 +149,16 @@ export default function HeroSection() {
                 <div className="flex items-center justify-between border-b border-[#1e1e1e] pb-5 mb-6">
                   <div className="flex items-center gap-3.5">
                     <img 
-                      src="/logo.png" 
-                      alt="Barbería Triadix" 
+                      src="/images/punto-fino/logo.png" 
+                      alt="Punto Fino Barbería" 
                       className="w-14 h-14 object-contain p-1 bg-black border border-[#333333] shadow-md" 
                     />
                     <div>
                       <h3 className="font-sans uppercase font-bold text-base sm:text-lg tracking-[0.2em] text-white leading-tight">
-                        Triadix
+                        Punto Fino
                       </h3>
-                      <span className="text-xs text-[#cfa53b] uppercase tracking-[0.18em] font-mono mt-0.5 block">
-                        Barbería · Cali
+                      <span className="text-xs text-[#B89758] uppercase tracking-[0.18em] font-mono mt-0.5 block">
+                        Barbería de Barrio · Cali
                       </span>
                     </div>
                   </div>
@@ -169,15 +169,15 @@ export default function HeroSection() {
 
                 <div className="space-y-4 text-sm sm:text-[15px] font-sans mb-8">
                   <div className="flex items-start gap-3 text-[#dcdcdc]">
-                    <CheckCircle2 size={18} className="text-[#cfa53b] shrink-0 mt-0.5" />
-                    <span><strong>3 Barberos disponibles:</strong> Andrés, Nicolás y Luis</span>
+                    <CheckCircle2 size={18} className="text-[#B89758] shrink-0 mt-0.5" />
+                    <span><strong>3 Barberos disponibles:</strong> Juan David (Admin), Emanuel y Juan Diego</span>
                   </div>
                   <div className="flex items-start gap-3 text-[#dcdcdc]">
-                    <CheckCircle2 size={18} className="text-[#cfa53b] shrink-0 mt-0.5" />
+                    <CheckCircle2 size={18} className="text-[#B89758] shrink-0 mt-0.5" />
                     <span><strong>Atención puntual:</strong> Reserva online y olvídate de hacer fila</span>
                   </div>
                   <div className="flex items-start gap-3 text-[#dcdcdc]">
-                    <CheckCircle2 size={18} className="text-[#cfa53b] shrink-0 mt-0.5" />
+                    <CheckCircle2 size={18} className="text-[#B89758] shrink-0 mt-0.5" />
                     <span><strong>Bebida de cortesía:</strong> Café, agua o jugo mientras te atendemos</span>
                   </div>
                 </div>

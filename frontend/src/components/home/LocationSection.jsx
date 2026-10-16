@@ -2,9 +2,9 @@ import React from 'react';
 import { MapPin, Phone, MessageCircle, Clock, Calendar, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
 
 export default function LocationSection() {
-  const address = 'Cali, Valle del Cauca, Colombia';
+  const address = 'Calle 5ta #38-24, Barrio Tequendama · Santiago de Cali, Valle del Cauca';
   const phone = '+57 312 239 8964';
-  const whatsappUrl = 'https://wa.me/573122398964?text=Hola,%20me%20gustar%C3%ADa%20agendar%20una%20cita%20en%20Triadix%20Barber%20Studio';
+  const whatsappUrl = 'https://wa.me/573122398964?text=Hola,%20me%20gustar%C3%ADa%20agendar%20una%20cita%20en%20Punto%20Fino%20Barber%C3%ADa';
 
   return (
     <section id="ubicacion" className="py-24 sm:py-32 bg-[#000000] border-b border-[#1e1e1e] text-white scroll-mt-24">
@@ -13,17 +13,17 @@ export default function LocationSection() {
         <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-[#1e1e1e] pb-8 mb-12">
           <div>
             <div className="flex items-center gap-2.5 mb-3">
-              <span className="w-2.5 h-2.5 bg-[#cfa53b]"></span>
-              <span className="font-sans text-xs sm:text-sm uppercase tracking-[0.26em] text-[#cfa53b] font-bold">
+              <span className="w-2.5 h-2.5 bg-[#B89758]"></span>
+              <span className="font-mono text-xs sm:text-sm uppercase tracking-[0.24em] text-[#B89758] font-bold">
                 06 · DÓNDE ESTAMOS & CONTACTO
               </span>
             </div>
             <h2 className="font-sans uppercase text-4xl sm:text-5xl lg:text-6xl text-white font-black tracking-normal sm:tracking-[0.02em] leading-tight">
-              Ubicación & Contacto
+              Sede Tequendama · Cali
             </h2>
           </div>
           <p className="font-sans text-sm sm:text-base text-[#aaaaaa] max-w-lg mt-4 md:mt-0 leading-relaxed">
-            Te esperamos en Cali para brindarte la mejor atención en corte y barba. Reserva tu cita online para atenderte puntual y sin filas.
+            Te esperamos en Barrio Tequendama sobre la Calle 5ta para brindarte la mejor atención en corte, barba y cejas. Reserva online para tu turno puntual sin filas.
           </p>
         </div>
 
@@ -33,22 +33,25 @@ export default function LocationSection() {
           <div className="lg:col-span-7 bg-[#0a0a0a] border border-[#1e1e1e] rounded-none p-8 sm:p-10 flex flex-col justify-between space-y-8 shadow-xl">
             {/* Address Banner */}
             <div className="space-y-5">
-              <span className="font-sans text-[11px] uppercase tracking-[0.2em] text-[#cfa53b] font-medium block">
-                Nuestra Sede
+              <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-[#B89758] font-bold block">
+                Nuestra Sede de Barrio
               </span>
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-none bg-[#141414] border border-[#222222] flex items-center justify-center text-[#cfa53b] shrink-0">
+                <div className="w-10 h-10 rounded-none bg-[#141414] border border-[#222222] flex items-center justify-center text-[#B89758] shrink-0">
                   <MapPin size={18} />
                 </div>
                 <div>
-                  <h3 className="font-sans text-xl sm:text-2xl text-white font-medium tracking-wide">
-                    Barbería Triadix
+                  <h3 className="font-sans text-xl sm:text-2xl text-white font-bold tracking-wide">
+                    Punto Fino Barbería
                   </h3>
                   <p className="font-sans text-sm text-[#cccccc] font-medium mt-1">
-                    Cali, Valle del Cauca · Colombia
+                    Calle 5ta #38-24 · Barrio Tequendama, Comuna 19
                   </p>
-                  <p className="font-sans text-xs text-[#888888] mt-2 leading-relaxed max-w-md">
-                    Espacio cómodo, climatizado, con buena música y excelente atención. Agenda con anticipación para asegurar tu cupo con tu barbero favorito.
+                  <p className="font-mono text-xs text-[#B89758] mt-0.5">
+                    Santiago de Cali, Valle del Cauca · Colombia
+                  </p>
+                  <p className="font-sans text-xs text-[#888888] mt-2.5 leading-relaxed max-w-md">
+                    Sobre el corredor de la Calle 5ta con fácil acceso por la Carrera 39. Espacio climatizado, café recién colado, toalla caliente y la mejor música mientras te cortás.
                   </p>
                 </div>
               </div>
@@ -61,7 +64,7 @@ export default function LocationSection() {
                     const el = document.getElementById('reservar');
                     if (el) el.scrollIntoView({ behavior: 'smooth' });
                   }}
-                  className="bg-white hover:bg-[#e5e5e5] text-black font-sans font-medium uppercase tracking-[0.18em] text-xs px-5 py-3 rounded-none inline-flex items-center gap-2 cursor-pointer transition-all active:scale-[0.99]"
+                  className="bg-white hover:bg-[#e5e5e5] text-black font-sans font-bold uppercase tracking-[0.18em] text-xs px-5 py-3 rounded-none inline-flex items-center gap-2 cursor-pointer transition-all active:scale-[0.99]"
                 >
                   <Calendar size={13} />
                   <span>Agendar Cita en Línea</span>
@@ -72,7 +75,7 @@ export default function LocationSection() {
 
             {/* Direct Contact Strip */}
             <div className="pt-6 border-t border-[#1e1e1e] space-y-4">
-              <span className="font-sans text-[11px] uppercase tracking-[0.2em] text-[#888888] font-medium block">
+              <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-[#888888] font-semibold block">
                 Canales de Atención Directa
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -90,7 +93,7 @@ export default function LocationSection() {
                     <span className="font-sans text-[10px] uppercase tracking-[0.16em] text-[#888888] block">
                       WhatsApp Barbería
                     </span>
-                    <span className="font-mono text-xs sm:text-sm font-medium text-white group-hover:text-[#cfa53b] transition-colors">
+                    <span className="font-mono text-xs sm:text-sm font-bold text-white group-hover:text-[#B89758] transition-colors">
                       +57 312 239 8964
                     </span>
                   </div>
@@ -108,7 +111,7 @@ export default function LocationSection() {
                     <span className="font-sans text-[10px] uppercase tracking-[0.16em] text-[#888888] block">
                       Llamadas
                     </span>
-                    <span className="font-mono text-xs sm:text-sm font-medium text-white group-hover:text-[#cfa53b] transition-colors">
+                    <span className="font-mono text-xs sm:text-sm font-bold text-white group-hover:text-[#B89758] transition-colors">
                       312 239 8964
                     </span>
                   </div>
@@ -121,8 +124,8 @@ export default function LocationSection() {
           <div className="lg:col-span-5 bg-[#0a0a0a] border border-[#1e1e1e] rounded-none p-6 sm:p-8 flex flex-col justify-between space-y-6">
             <div>
               <div className="flex items-center gap-2 mb-5">
-                <Clock size={15} className="text-[#cfa53b]" />
-                <h4 className="font-sans text-xs uppercase tracking-[0.2em] font-medium text-white">Horarios de Atención</h4>
+                <Clock size={15} className="text-[#B89758]" />
+                <h4 className="font-mono text-xs uppercase tracking-[0.2em] font-bold text-white">Horarios de Atención</h4>
               </div>
               <div className="divide-y divide-[#1e1e1e] font-sans text-xs">
                 <div className="py-3 flex justify-between items-center">
@@ -139,13 +142,13 @@ export default function LocationSection() {
                 </div>
                 <div className="py-3 flex justify-between items-center">
                   <span className="text-[#888888]">Domingos</span>
-                  <span className="font-mono text-[#cfa53b] font-medium bg-[#141414] px-2.5 py-1 rounded-none border border-[#cfa53b]/30">
+                  <span className="font-mono text-[#B89758] font-bold bg-[#141414] px-2.5 py-1 rounded-none border border-[#B89758]/30">
                     09:00 — 16:00
                   </span>
                 </div>
               </div>
               <div className="flex items-center gap-2 mt-4 text-[11px] font-sans text-[#888888]">
-                <ShieldCheck size={14} className="text-[#cfa53b]" />
+                <ShieldCheck size={14} className="text-[#B89758]" />
                 <span>Atención puntual y sin filas al reservar tu cita online.</span>
               </div>
             </div>
@@ -153,17 +156,17 @@ export default function LocationSection() {
             {/* Visual Photo Frame */}
             <div className="relative rounded-none overflow-hidden border border-[#222222] aspect-[16/9] bg-[#000000] group">
               <img
-                src="https://images.unsplash.com/photo-1512690459411-b9245aed614b?auto=format&fit=crop&w=900&q=80"
-                alt="Barbería Triadix Cali"
-                className="w-full h-full object-cover filter brightness-70 contrast-110 group-hover:scale-105 transition-transform duration-500"
+                src="/images/punto-fino/ritual-vapor-real.png"
+                alt="Punto Fino Barbería Tequendama Cali"
+                className="w-full h-full object-cover filter brightness-85 contrast-110 group-hover:scale-105 transition-transform duration-500"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex flex-col items-center justify-end p-5 text-center">
-                <span className="font-sans text-xs uppercase tracking-[0.2em] text-[#cfa53b] font-medium mb-1 flex items-center gap-1.5">
+                <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#B89758] font-bold mb-1 flex items-center gap-1.5">
                   <Sparkles size={12} />
-                  Triadix
+                  Punto Fino
                 </span>
-                <span className="font-sans text-sm uppercase tracking-[0.16em] text-white font-semibold">
-                  Barbería Moderna · Cali
+                <span className="font-sans text-sm uppercase tracking-[0.16em] text-white font-bold">
+                  Barrio Tequendama · Santiago de Cali
                 </span>
               </div>
             </div>

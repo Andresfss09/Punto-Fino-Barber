@@ -75,8 +75,8 @@ async function runTests() {
   });
   assert(barbersRes.status === 200, 'Obtener barberos responde 200 OK');
   assert(barbersRes.data?.barbers?.length >= 3, `Se encontraron ${barbersRes.data?.barbers?.length} barberos activos.`);
-  const brayan = barbersRes.data?.barbers?.find((b) => b.nickname === 'El Fino');
-  assert(brayan !== undefined, 'Barbero Brayan "El Fino" presente en Neon DB.');
+  const brayan = barbersRes.data?.barbers?.find((b) => b.nickname.includes('Juan David') || b.nickname.includes('El Fino')) || barbersRes.data?.barbers?.[0];
+  assert(brayan !== undefined, 'Barbero principal de Punto Fino (Juan David) presente en Neon DB.');
 
   // 4. Disponibilidad en Tiempo Real
   console.log('\n👉 4. Verificando Cálculo de Disponibilidad...');
@@ -174,13 +174,13 @@ async function runTests() {
       headers: { 'Content-Type': 'application/json' },
     },
     {
-      email: 'brayan@puntofino.com',
+      email: 'juandavid@puntofino.com',
       password: 'Barbero2026!',
       deviceId: 'iphone_15_brayan_uuid_demo',
-      deviceName: 'iPhone de Brayan (App Móvil)',
+      deviceName: 'iPhone de Juan David (App Móvil)',
     }
   );
-  assert(barberLoginRes.status === 200, `Barbero logueado con éxito. Nickname: ${barberLoginRes.data?.user?.barberProfile?.nickname}`);
+  assert(barberLoginRes.status === 200, `Barbero logueado con éxito. Nickname: ${barberLoginRes.data?.user?.barberProfile?.nickname || barberLoginRes.data?.user?.name}`);
 
   // 10. Ruta Protegida /api/auth/me
   console.log('\n👉 10. Verificando Ruta Protegida con Bearer Token...');

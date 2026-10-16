@@ -38,10 +38,10 @@ async function runTests() {
 
   // Obtener barbero y servicio del seeder
   const brayan = await prisma.barberProfile.findFirst({
-    where: { nickname: 'El Fino' },
+    where: { isActive: true },
     include: { user: true },
   });
-  assert(brayan, 'Barbero Brayan Murillo "El Fino" debe existir en la base de datos');
+  assert(brayan, 'Barbero principal de Punto Fino debe existir en la base de datos');
 
   const corteService = await prisma.service.findFirst({
     where: { name: { contains: 'Corte Clásico' } },

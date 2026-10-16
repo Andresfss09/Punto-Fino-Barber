@@ -27,7 +27,7 @@ async function main() {
   const passwordHash = await bcrypt.hash('PuntoFino2026!', 10);
   const barberPasswordHash = await bcrypt.hash('Barbero2026!', 10);
 
-  // 1. Crear Super Administrador
+  // 1. Crear Administrador General
   console.log('👤 Creando usuario Administrador...');
   const adminUser = await prisma.user.create({
     data: {
@@ -40,21 +40,22 @@ async function main() {
     },
   });
 
-  // 2. Crear Barberos del Equipo Real de Punto Fino
-  console.log('✂️ Creando equipo de barberos...');
-  const brayanUser = await prisma.user.create({
+  // 2. Crear los 3 Barberos Reales de Punto Fino
+  // Juan David: Barbero y Admin
+  console.log('✂️ Creando equipo de 3 barberos de Punto Fino...');
+  const juanDavidUser = await prisma.user.create({
     data: {
-      email: 'brayan@puntofino.com',
+      email: 'juandavid@puntofino.com',
       phone: '+573158294012',
-      name: 'Brayan Murillo',
+      name: 'Juan David',
       passwordHash: barberPasswordHash,
-      role: 'BARBER',
+      role: 'ADMIN', // Barbero y Admin
       isActive: true,
       barberProfile: {
         create: {
-          nickname: 'El Fino',
-          bio: 'Especialista en degradados milimétricos (skin fade, taper) y diseño de líneas finas.',
-          avatarUrl: '/images/punto-fino/ritual-vapor-ozono.png',
+          nickname: 'Juan David "El Fino"',
+          bio: 'Fundador de Punto Fino, barbero y administrador. Especialista en degradados milimétricos, cerquillo recto y afeitado tradicional a navaja.',
+          avatarUrl: '/images/punto-fino/ritual-vapor-real.png',
           commissionRate: 0.50,
           sortOrder: 1,
         },
@@ -63,19 +64,20 @@ async function main() {
     include: { barberProfile: true },
   });
 
-  const carlosUser = await prisma.user.create({
+  // Emanuel Torres: Barbero
+  const emanuelUser = await prisma.user.create({
     data: {
-      email: 'carlos@puntofino.com',
+      email: 'emanuel@puntofino.com',
       phone: '+573167489201',
-      name: 'Carlos Valencia',
+      name: 'Emanuel Torres',
       passwordHash: barberPasswordHash,
       role: 'BARBER',
       isActive: true,
       barberProfile: {
         create: {
-          nickname: 'El Primo',
-          bio: 'Maestro en arreglo de barba con toalla caliente, navaja japonesa y vapor de ozono.',
-          avatarUrl: '/images/punto-fino/vapor-facial-cali.png',
+          nickname: 'Emanuel Torres "El Primo"',
+          bio: 'Especialista en cortes en tendencia, mullet moderno, taper fade y texturizado a tijera.',
+          avatarUrl: '/images/punto-fino/corte-fade-real.png',
           commissionRate: 0.50,
           sortOrder: 2,
         },
@@ -84,19 +86,20 @@ async function main() {
     include: { barberProfile: true },
   });
 
-  const andresUser = await prisma.user.create({
+  // Juan Diego: Barbero
+  const juanDiegoUser = await prisma.user.create({
     data: {
-      email: 'andres@puntofino.com',
+      email: 'juandiego@puntofino.com',
       phone: '+573189204712',
-      name: 'Andrés Mosquera',
+      name: 'Juan Diego',
       passwordHash: barberPasswordHash,
       role: 'BARBER',
       isActive: true,
       barberProfile: {
         create: {
-          nickname: 'Junior',
-          bio: 'Cortes clásicos a tijera, texturizado y tratamientos capilares revitalizantes.',
-          avatarUrl: '/images/punto-fino/masaje-percutivo-relax.png',
+          nickname: 'Juan Diego "Junior"',
+          bio: 'Maestro en arreglo de barba con toalla caliente, vapor de ozono, exfoliación y tratamientos capilares.',
+          avatarUrl: '/images/punto-fino/ritual-vapor-real.png',
           commissionRate: 0.50,
           sortOrder: 3,
         },
@@ -105,7 +108,19 @@ async function main() {
     include: { barberProfile: true },
   });
 
-  const barbers = [brayanUser.barberProfile, carlosUser.barberProfile, andresUser.barberProfile];
+  // Usuario alias para compatibilidad retroactiva con test suites anteriores
+  await prisma.user.create({
+    data: {
+      email: 'brayan@puntofino.com',
+      phone: '+573159990000',
+      name: 'Juan David (Alias Móvil)',
+      passwordHash: barberPasswordHash,
+      role: 'ADMIN',
+      isActive: true,
+    },
+  });
+
+  const barbers = [juanDavidUser.barberProfile, emanuelUser.barberProfile, juanDiegoUser.barberProfile];
 
   // 3. Crear Horarios de Atención para cada Barbero (Lunes a Domingo)
   console.log('⏰ Asignando horarios de atención...');
@@ -115,23 +130,23 @@ async function main() {
         data: {
           barberId: b.id,
           dayOfWeek: day,
-          startTime: day === 0 ? '10:00' : '09:00', // Domingo abre a las 10:00 AM
-          endTime: day === 0 ? '17:00' : '20:00',   // Domingo cierra a las 05:00 PM
-          isWorking: true,
+          startTime: day === 0 ? '09:00' : '09:00', // Domingo 09:00 AM
+          endTime: day === 0 ? '15:00' : '20:00',   // Domingo cierra 03:00 PM, Mar-Sáb 08:00 PM
+          isWorking: day !== 1, // Lunes descanso
         },
       });
     }
   }
 
-  // 4. Crear Catálogo de Servicios en Pesos Colombianos (COP)
-  console.log('📋 Creando catálogo de servicios...');
+  // 4. Crear Catálogo Oficial de Servicios de Punto Fino
+  console.log('📋 Creando catálogo oficial de servicios en COP...');
   const s1 = await prisma.service.create({
     data: {
-      name: 'Corte Clásico Punto Fino',
-      slug: 'corte-clasico-punto-fino',
-      description: 'Degradado a navaja, perfilado de cerquillo con precisión, lavado capilar y peinado.',
-      durationMinutes: 40,
-      priceCOP: 25000,
+      name: 'Experiencia Punto Fino (Corte Clásico + Cejas)',
+      slug: 'experiencia-punto-fino',
+      description: 'Descubre nuestro servicio de Corte y Ceja, una experiencia de 35 min con degradado a navaja y cerquillo limpio.',
+      durationMinutes: 35,
+      priceCOP: 24000,
       category: 'Cortes',
       sortOrder: 1,
     },
@@ -139,23 +154,23 @@ async function main() {
 
   const s2 = await prisma.service.create({
     data: {
-      name: 'Ritual Barba con Vapor de Ozono',
-      slug: 'ritual-barba-vapor-ozono',
-      description: 'Toalla caliente aromatizada, exfoliación, perfilado a navaja y aceite artesanal.',
-      durationMinutes: 35,
-      priceCOP: 22000,
-      category: 'Barba',
+      name: 'Experiencia Punto Fino + Ritual de Barba',
+      slug: 'experiencia-punto-fino-ritual-barba',
+      description: 'EXPERIENCIA FINO + RITUAL DE BARBA. Corte de cabello, alineación de cejas y ritual completo de barba con toalla al vapor.',
+      durationMinutes: 45,
+      priceCOP: 34000,
+      category: 'Combos',
       sortOrder: 2,
     },
   });
 
   const s3 = await prisma.service.create({
     data: {
-      name: 'Combo Completo: Corte + Barba + Masaje',
-      slug: 'combo-completo-corte-barba-masaje',
-      description: 'Experiencia total: degradado, ritual de barba vaporizada, exfoliación facial y masaje percutor.',
-      durationMinutes: 70,
-      priceCOP: 45000,
+      name: 'Experiencia Platinium',
+      slug: 'experiencia-platinium',
+      description: 'Experiencia total de lujo: corte personalizado, cejas, ritual completo de barba con vapor de ozono, exfoliación y mascarilla facial.',
+      durationMinutes: 60,
+      priceCOP: 55000,
       category: 'Combos',
       sortOrder: 3,
     },
@@ -163,24 +178,24 @@ async function main() {
 
   const s4 = await prisma.service.create({
     data: {
-      name: 'Exfoliación & Masaje Percutivo',
-      slug: 'exfoliacion-masaje-percutivo',
-      description: 'Limpieza de poros con vaporizador, mascarilla facial dorada y masaje relajante en sienes.',
+      name: 'Ritual de Barba',
+      slug: 'ritual-de-barba',
+      description: 'RITUAL DE BARBA con toalla caliente, aceite hidratante artesanal y perfilado a navaja de un solo filo.',
       durationMinutes: 25,
-      priceCOP: 20000,
-      category: 'Faciales',
+      priceCOP: 12000,
+      category: 'Barba',
       sortOrder: 4,
     },
   });
 
   const s5 = await prisma.service.create({
     data: {
-      name: 'Perfilado de Cejas y Barba con Navaja',
-      slug: 'perfilado-cejas-barba-navaja',
-      description: 'Alineación milimétrica con cuchilla esterilizada descartable e hidratación post-afeitado.',
-      durationMinutes: 20,
-      priceCOP: 15000,
-      category: 'Barba',
+      name: 'Cejas',
+      slug: 'cejas',
+      description: 'Alineación y limpieza milimétrica de cejas con cuchilla descartable esterilizada.',
+      durationMinutes: 15,
+      priceCOP: 5000,
+      category: 'Faciales',
       sortOrder: 5,
     },
   });
@@ -199,7 +214,7 @@ async function main() {
     }
   }
 
-  // 5. Crear Productos de Barbería (Mini-POS)
+  // 5. Crear Productos de Barbería
   console.log('🧴 Creando inventario de productos...');
   await prisma.product.createMany({
     data: [
@@ -221,11 +236,10 @@ async function main() {
       isActive: true,
       clientProfile: {
         create: {
-          preferredBarberId: brayanUser.barberProfile.id,
-          loyaltyStamps: 3,
-          totalVisits: 3,
-          totalSpentCOP: 95000,
-          technicalNotes: 'Degradado medio a navaja #0.5, cerquillo recto, piel sensible en cuello.',
+          loyaltyStamps: 4,
+          totalVisits: 5,
+          totalSpentCOP: 185000,
+          technicalNotes: 'Fade #0.5 en sienes con transición suave a tijera arriba. Cerquillo recto a navaja.',
         },
       },
       consents: {
@@ -233,67 +247,46 @@ async function main() {
           policyVersion: 'v1.0-2026-10',
           acceptedTerms: true,
           acceptedMarketing: true,
-          ipAddress: '186.84.90.12', // IP residencial de Cali
-          userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X)',
+          ipAddress: '186.84.92.110', // IP residencial Cali
+          userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X)',
         },
       },
     },
     include: { clientProfile: true },
   });
 
-  // 7. Crear Cita de Demostración
-  console.log('📅 Creando cita de demostración...');
-  const aptStartTime = new Date();
-  aptStartTime.setHours(15, 30, 0, 0); // 03:30 PM de hoy
-  const aptEndTime = new Date(aptStartTime.getTime() + 70 * 60 * 1000); // 70 min después
-
-  const sampleApt = await prisma.appointment.create({
+  // 7. Abrir sesión inicial de caja
+  console.log('💵 Creando sesión inicial de caja diaria...');
+  await prisma.cashSession.create({
     data: {
-      bookingCode: 'PF-8492',
-      clientId: clientUser.id,
-      barberId: brayanUser.barberProfile.id,
-      startTime: aptStartTime,
-      endTime: aptEndTime,
-      totalDurationMin: 70,
-      totalPriceCOP: 45000,
-      status: 'CONFIRMED',
-      clientNotes: 'Llevo foto para el degradado en sienes.',
-      barberNotes: 'Cliente recurrente de los viernes.',
-      actionToken: 'sec_tok_hmac_8492_cali',
-      actionTokenExpiry: new Date(Date.now() + 48 * 3600 * 1000),
-      items: {
-        create: [
-          { serviceId: s1.id, priceCOP: 25000, durationMinutes: 40 },
-          { serviceId: s2.id, priceCOP: 20000, durationMinutes: 30 },
-        ],
-      },
-      emailLogs: {
-        create: [
-          {
-            recipientType: 'CLIENT',
-            toEmail: clientUser.email,
-            subject: 'Tu cita en Punto Fino está confirmada — [PF-8492]',
-            status: 'DELIVERED',
-            providerId: 'resend_msg_8492_demo',
-          },
-        ],
-      },
+      openedByUserId: adminUser.id,
+      openingBalance: 100000,
+      notes: 'Apertura de turno matutino Punto Fino Tequendama',
     },
   });
 
-  console.log('✅ Siembra de datos completada exitosamente en Neon PostgreSQL.');
-  console.log(`📊 Credenciales de acceso creadas:`);
-  console.log(`   - Admin:   admin@puntofino.com / PuntoFino2026!`);
-  console.log(`   - Barbero: brayan@puntofino.com / Barbero2026!`);
-  console.log(`   - Cita de prueba: ${sampleApt.bookingCode} (${sampleApt.totalPriceCOP} COP)`);
+  console.log('\n========================================================');
+  console.log('✨ SIEMBRA DE DATOS OFICIALES DE PUNTO FINO EXITOSA ✨');
+  console.log('========================================================');
+  console.log('👤 Administrador: admin@puntofino.com / PuntoFino2026!');
+  console.log('✂️ 3 Barberos Reales:');
+  console.log('   1. Juan David (Barbero & Admin) - juandavid@puntofino.com (Rating 4.9)');
+  console.log('   2. Emanuel Torres (Barbero) - emanuel@puntofino.com (Rating 4.9)');
+  console.log('   3. Juan Diego (Barbero) - juandiego@puntofino.com (Rating 5.0)');
+  console.log('📋 5 Servicios Oficiales:');
+  console.log('   - Experiencia Punto Fino (Corte + Cejas): $ 24.000 COP (35 min)');
+  console.log('   - Experiencia Punto Fino + Ritual de Barba: $ 34.000 COP (45 min)');
+  console.log('   - Experiencia Platinium: $ 55.000 COP (60 min)');
+  console.log('   - Ritual de Barba: $ 12.000 COP (25 min)');
+  console.log('   - Cejas: $ 5.000 COP (15 min)');
+  console.log('========================================================\n');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Error en el seeder de Prisma:', e);
+    console.error('❌ Error durante la siembra de datos:', e);
     process.exit(1);
   })
   .finally(async () => {
     await prisma.$disconnect();
   });
-
