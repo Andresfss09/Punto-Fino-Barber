@@ -1,25 +1,25 @@
 const express = require('express');
 const router = express.Router();
 const {
+  holdSlot,
   createAppointment,
-  getAvailableSlots,
-  getMyAppointments,
-  cancelAppointment,
-  updateAppointmentStatus,
-  getBarberAppointments,
-  getAllAppointments,
+  getAppointmentByCode,
+  manageAppointmentByToken,
+  getAppointments,
+  updateStatus,
 } = require('../controllers/appointmentController');
 const { protect, protectOptional } = require('../middlewares/auth');
-const { authorize } = require('../middlewares/roles');
+const { authorize } = require('../middlewares/auth');
 
-router.get('/available-slots', getAvailableSlots);
+// Rutas públicas de reserva
+router.post('/hold', holdSlot);
 router.post('/', protectOptional, createAppointment);
+router.get('/code/:code', getAppointmentByCode);
+router.post('/token/:token/:action', manageAppointmentByToken);
 
+// Rutas protegidas para el equipo (Barberos y Administradores)
 router.use(protect);
-router.get('/', authorize('admin'), getAllAppointments);
-router.get('/my-appointments', authorize('cliente'), getMyAppointments);
-router.get('/barber-appointments', authorize('barbero', 'admin'), getBarberAppointments);
-router.put('/:id/cancel', cancelAppointment);
-router.put('/:id/status', authorize('barbero', 'admin'), updateAppointmentStatus);
+router.get('/', authorize('ADMIN', 'SUPER_ADMIN', 'BARBER', 'RECEPTIONIST'), getAppointments);
+router.put('/:id/status', authorize('ADMIN', 'SUPER_ADMIN', 'BARBER'), updateStatus);
 
 module.exports = router;

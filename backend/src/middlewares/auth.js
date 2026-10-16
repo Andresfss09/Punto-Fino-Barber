@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const prisma = require('../config/prisma');
 
+// Middleware para proteger rutas autenticadas (Barberos, Administradores, Recepción)
 exports.protect = async (req, res, next) => {
   try {
     let token;
@@ -12,49 +13,60 @@ exports.protect = async (req, res, next) => {
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: 'No autorizado. Por favor inicia sesión.',
+        message: 'No autorizado. Por favor iniciá sesión con tus credenciales de Punto Fino.',
       });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const user = await User.findById(decoded.id).select('-password');
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      include: {
+        barberProfile: true,
+      },
+    });
+
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Usuario no encontrado.',
+        message: 'Usuario no encontrado en la base de datos.',
       });
     }
 
     if (!user.isActive) {
       return res.status(401).json({
         success: false,
-        message: 'Tu cuenta ha sido desactivada.',
+        message: 'Tu cuenta ha sido desactivada por la administración.',
       });
     }
 
-    req.user = user;
+    // Excluimos passwordHash de la request
+    const { passwordHash, ...userWithoutPassword } = user;
+    req.user = userWithoutPassword;
     next();
   } catch (error) {
     return res.status(401).json({
       success: false,
-      message: 'Token inválido o expirado.',
+      message: 'Token de acceso inválido o expirado.',
+      error: error.message,
     });
   }
 };
 
+// Middleware de Control de Acceso Basado en Roles (RBAC)
 exports.authorize = (...roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
+    if (!req.user || !roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
-        message: `El rol ${req.user.role} no está autorizado para acceder a esta ruta.`,
+        message: `Acceso denegado: El rol '${req.user?.role || 'INVITADO'}' no tiene permisos para esta acción.`,
       });
     }
     next();
   };
 };
 
+// Middleware para rutas públicas que pueden enriquecerse si el usuario envía token
 exports.protectOptional = async (req, res, next) => {
   try {
     let token;
@@ -63,13 +75,17 @@ exports.protectOptional = async (req, res, next) => {
     }
     if (token) {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const user = await User.findById(decoded.id).select('-password');
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.id },
+        include: { barberProfile: true },
+      });
       if (user && user.isActive) {
-        req.user = user;
+        const { passwordHash, ...userClean } = user;
+        req.user = userClean;
       }
     }
   } catch (error) {
-    // Si el token es inválido o no existe, simplemente continúa como invitado
+    // Continúa como invitado anónimo
   }
   next();
 };

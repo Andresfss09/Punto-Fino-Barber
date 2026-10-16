@@ -1,11 +1,12 @@
-const mongoose = require('mongoose');
+const prisma = require('./prisma');
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI);
-    console.log(`✅ MongoDB conectado: ${conn.connection.host}`);
+    // Verificar conexión ejecutando una query ligera
+    await prisma.$queryRaw`SELECT 1 as connected`;
+    console.log(`✅ Neon PostgreSQL conectado exitosamente con Prisma.`);
   } catch (error) {
-    console.error(`❌ Error conectando MongoDB: ${error.message}`);
+    console.error(`❌ Error conectando a Neon PostgreSQL: ${error.message}`);
     process.exit(1);
   }
 };

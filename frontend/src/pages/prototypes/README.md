@@ -73,3 +73,4 @@ Las capturas generadas directamente del navegador se encuentran en:
 - `docs/screenshots/fase_1/03_app_movil_barbero.png`
 - `docs/screenshots/fase_1/04_panel_administrador.png`
 - `docs/screenshots/fase_1/05_correo_confirmacion.png`
+

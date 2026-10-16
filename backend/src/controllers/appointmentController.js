@@ -1,674 +1,464 @@
-const mongoose = require('mongoose');
-const Appointment = require('../models/Appointment');
-const Barber = require('../models/Barber');
-const Service = require('../models/Service');
-const User = require('../models/User');
-const { calculateEndTime, generateTimeSlots, sendSuccess, sendError } = require('../utils/helpers');
-const { createNotification } = require('../services/notificationService');
-const { sendAppointmentConfirmationEmail, sendAppointmentNotificationToBarber } = require('../services/emailService');
+const crypto = require('crypto');
+const prisma = require('../config/prisma');
+const { sendSuccess, sendError } = require('../utils/helpers');
 
-// Helper to convert HH:mm to minutes from midnight
-const timeToMinutes = (timeStr) => {
-  if (!timeStr) return 0;
-  const [h, m] = timeStr.split(':').map(Number);
-  return h * 60 + m;
+// Helper para generar código de reserva legible (ej. PF-7429)
+const generateBookingCode = () => {
+  const randomNum = Math.floor(1000 + Math.random() * 9000);
+  return `PF-${randomNum}`;
 };
 
-// Helper to convert minutes from midnight to HH:mm
-const minutesToTime = (totalMinutes) => {
-  const h = Math.floor(totalMinutes / 60);
-  const m = totalMinutes % 60;
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-};
+// @desc    Bloqueo atómico temporal de cupo por 8 minutos (Anti-Doble Reserva)
+// @route   POST /api/appointments/hold
+// @access  Public
+exports.holdSlot = async (req, res) => {
+  try {
+    const { barberId, startTime, durationMinutes = 40, sessionId } = req.body;
 
-const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-
-// Helper to reliably extract the barber's schedule for a given day (0-6)
-const extractDaySchedule = (barber, dayOfWeek) => {
-  if (!barber || !barber.schedule) {
-    return {
-      isWorking: dayOfWeek !== 0,
-      startTime: '09:00',
-      endTime: '20:00',
-      breakStart: '13:00',
-      breakEnd: '14:00',
-    };
-  }
-
-  const dayName = DAY_NAMES[dayOfWeek];
-  let found = null;
-
-  if (Array.isArray(barber.schedule)) {
-    found = barber.schedule.find(
-      (s) => s.day === dayOfWeek || s.day === dayName || String(s.day) === String(dayOfWeek)
-    );
-  } else if (typeof barber.schedule === 'object') {
-    found = barber.schedule[dayName] || barber.schedule[dayOfWeek] || barber.schedule[String(dayOfWeek)];
-  }
-
-  if (!found) {
-    return {
-      isWorking: dayOfWeek !== 0,
-      startTime: '09:00',
-      endTime: '20:00',
-      breakStart: '13:00',
-      breakEnd: '14:00',
-    };
-  }
-
-  return {
-    isWorking: found.isWorking !== false,
-    startTime: found.startTime || '09:00',
-    endTime: found.endTime || '20:00',
-    breakStart: found.breakStart || found.breakStartTime || '13:00',
-    breakEnd: found.breakEnd || found.breakEndTime || '14:00',
-  };
-};
-
-// Helper to parse YYYY-MM-DD cleanly in local timezone without UTC offset shift
-const parseLocalDateRange = (dateStr) => {
-  if (typeof dateStr === 'string' && dateStr.includes('-')) {
-    const parts = dateStr.split('T')[0].split('-').map(Number);
-    if (parts.length === 3) {
-      const [y, m, d] = parts;
-      const start = new Date(y, m - 1, d, 0, 0, 0, 0);
-      const end = new Date(y, m - 1, d, 23, 59, 59, 999);
-      return { startOfDay: start, endOfDay: end, dayOfWeek: start.getDay(), localDate: start };
+    if (!barberId || !startTime) {
+      return sendError(res, 400, 'Se requieren barberId y startTime.');
     }
+
+    const start = new Date(startTime);
+    const end = new Date(start.getTime() + parseInt(durationMinutes, 10) * 60 * 1000);
+    const now = new Date();
+
+    // Validar que la hora no sea en el pasado
+    if (start <= now) {
+      return sendError(res, 400, 'No es posible apartar un horario en el pasado.');
+    }
+
+    // Ejecutar verificación atómica en transacción
+    const hold = await prisma.$transaction(async (tx) => {
+      // 1. Verificar si ya existe una cita confirmada en ese intervalo
+      const existingApt = await tx.appointment.findFirst({
+        where: {
+          barberId,
+          status: { in: ['CONFIRMED', 'IN_PROGRESS'] },
+          AND: [
+            { startTime: { lt: end } },
+            { endTime: { gt: start } },
+          ],
+        },
+      });
+
+      if (existingApt) {
+        throw new Error('SLOT_OCCUPIED_APPOINTMENT');
+      }
+
+      // 2. Verificar si existe otro hold activo no expirado de otra sesión
+      const existingHold = await tx.slotHold.findFirst({
+        where: {
+          barberId,
+          expiresAt: { gt: now },
+          ...(sessionId ? { sessionId: { not: sessionId } } : {}),
+          AND: [
+            { startTime: { lt: end } },
+            { endTime: { gt: start } },
+          ],
+        },
+      });
+
+      if (existingHold) {
+        throw new Error('SLOT_HELD_BY_ANOTHER_CLIENT');
+      }
+
+      // 3. Crear el nuevo hold con TTL de 8 minutos
+      const expiresAt = new Date(now.getTime() + 8 * 60 * 1000);
+      return tx.slotHold.create({
+        data: {
+          barberId,
+          startTime: start,
+          endTime: end,
+          sessionId: sessionId || crypto.randomUUID(),
+          expiresAt,
+        },
+      });
+    });
+
+    return sendSuccess(res, 201, 'Cupo reservado temporalmente por 8 minutos.', {
+      holdId: hold.id,
+      sessionId: hold.sessionId,
+      expiresAt: hold.expiresAt,
+      startTime: hold.startTime,
+      endTime: hold.endTime,
+    });
+  } catch (error) {
+    if (error.message === 'SLOT_OCCUPIED_APPOINTMENT') {
+      return sendError(res, 409, 'Este horario ya fue reservado por otro cliente. Por favor elegí otra hora.');
+    }
+    if (error.message === 'SLOT_HELD_BY_ANOTHER_CLIENT') {
+      return sendError(res, 409, 'Alguien está completando la reserva en este mismo turno. Te sugerimos el siguiente horario libre.');
+    }
+    console.error('Error en holdSlot:', error);
+    return sendError(res, 500, 'Error al proteger el cupo.');
   }
-  const d = new Date(dateStr);
-  const start = new Date(d);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(d);
-  end.setHours(23, 59, 59, 999);
-  return { startOfDay: start, endOfDay: end, dayOfWeek: start.getDay(), localDate: start };
 };
 
-// @desc    Crear cita (soporta tanto usuarios autenticados como clientes invitados)
+// @desc    Crear cita confirmada (Checkout Público sin cuenta o Staff)
 // @route   POST /api/appointments
-// @access  Public / Optional Auth
+// @access  Public (Enriquece con protectOptional)
 exports.createAppointment = async (req, res) => {
   try {
-    let {
-      barberId,
+    const {
       serviceIds,
-      services: reqServices,
-      date,
+      barberId,
       startTime,
-      notes,
-      paymentMethod,
       clientName,
-      clientEmail,
       clientPhone,
-      clientAddress,
+      clientEmail,
+      clientNotes,
+      acceptHabeasData,
+      acceptMarketing,
+      holdId,
     } = req.body;
 
-    // Obtener servicios y calcular totales (soporta ObjectId, nombres o array en req.body.services / serviceIds)
-    const rawServiceList = serviceIds || reqServices || [];
-    const normalizedServiceList = Array.isArray(rawServiceList)
-      ? rawServiceList.map((s) => (s && typeof s === 'object' && s._id ? s._id : s))
-      : [rawServiceList];
-
-    const validObjectIds = normalizedServiceList.filter((id) => mongoose.Types.ObjectId.isValid(id));
-    const services = await Service.find({
-      $or: [
-        { _id: { $in: validObjectIds } },
-        { name: { $in: normalizedServiceList } }
-      ],
-      isActive: true
-    });
-    if (services.length === 0) {
-      return sendError(res, 404, 'Por favor selecciona al menos un servicio válido.');
+    if (!barberId || !startTime || !serviceIds || !serviceIds.length) {
+      return sendError(res, 400, 'Faltan campos obligatorios para agendar la cita.');
     }
 
-    const totalPrice = services.reduce((sum, s) => sum + (s.price || 0), 0);
-    const totalDuration = services.reduce((sum, s) => sum + (s.duration || 40), 0);
-    const endTime = calculateEndTime(startTime, totalDuration);
-
-    const { startOfDay, endOfDay, localDate } = parseLocalDateRange(date);
-
-    const candidateStartMins = timeToMinutes(startTime);
-    const candidateEndMins = candidateStartMins + totalDuration;
-
-    let targetBarberUser = null;
-    let targetBarberDoc = null;
-
-    // Si seleccionó un barbero específico
-    if (barberId && barberId !== 'any') {
-      targetBarberDoc = await Barber.findOne({
-        $or: [{ user: barberId }, { _id: barberId }],
-      }).populate('user', 'name email phone avatar isActive');
-
-      if (!targetBarberDoc || !targetBarberDoc.isAvailable) {
-        return sendError(res, 404, 'El barbero seleccionado no se encuentra disponible.');
-      }
-      targetBarberUser = targetBarberDoc.user;
-    } else {
-      // Si seleccionó "Cualquiera", buscar el primer barbero disponible que no tenga conflicto
-      const allBarbers = await Barber.find({ isAvailable: true }).populate('user', 'name email phone avatar isActive');
-      for (const b of allBarbers) {
-        if (!b.user || !b.user.isActive) continue;
-
-        const dayOfWeek = startOfDay.getDay();
-        const sched = extractDaySchedule(b, dayOfWeek);
-        if (!sched.isWorking) continue;
-
-        const bUserIds = [b.user._id, b._id].filter(Boolean);
-        const existingApts = await Appointment.find({
-          barber: { $in: bUserIds },
-          date: { $gte: startOfDay, $lte: endOfDay },
-          status: { $nin: ['cancelada', 'no_show'] },
-        });
-
-        const conflict = existingApts.some((apt) => {
-          const aStart = timeToMinutes(apt.startTime);
-          const aEnd = apt.endTime ? timeToMinutes(apt.endTime) : aStart + (apt.totalDuration || 40);
-          return candidateStartMins < aEnd && candidateEndMins > aStart;
-        });
-
-        if (!conflict) {
-          targetBarberUser = b.user;
-          targetBarberDoc = b;
-          break;
-        }
-      }
-
-      if (!targetBarberUser) {
-        return sendError(res, 400, 'No hay barberos disponibles en el horario seleccionado. Por favor elige otro horario.');
-      }
+    if (!clientName || !clientPhone) {
+      return sendError(res, 400, 'Nombre completo y número de WhatsApp son obligatorios.');
     }
 
-    // Verificar colisión de horario con el barbero asignado
-    const barberUserIds = [targetBarberUser._id, targetBarberDoc?._id].filter(Boolean);
-    const existingAppointments = await Appointment.find({
-      barber: { $in: barberUserIds },
-      date: { $gte: startOfDay, $lte: endOfDay },
-      status: { $nin: ['cancelada', 'no_show'] },
-    });
-
-    const hasConflict = existingAppointments.some((apt) => {
-      const aStart = timeToMinutes(apt.startTime);
-      const aEnd = apt.endTime ? timeToMinutes(apt.endTime) : aStart + (apt.totalDuration || 40);
-      return candidateStartMins < aEnd && candidateEndMins > aStart;
-    });
-
-    if (hasConflict) {
-      return sendError(
-        res,
-        400,
-        'Ese horario ya está ocupado con este barbero. Por favor elige otra hora.'
-      );
+    // Validación obligatoria de Ley 1581 (Habeas Data)
+    if (!acceptHabeasData) {
+      return sendError(res, 400, 'Debes autorizar el tratamiento de datos personales (Ley 1581 de 2012) para agendar.');
     }
 
-    // Manejo de usuario cliente (autenticado o invitado)
-    let clientId = req.user?._id || req.user?.id;
-    let finalClientName = (req.user?.name || clientName || '').trim();
-    let finalClientEmail = (req.user?.email || clientEmail || '').toLowerCase().trim();
-    let finalClientPhone = (req.user?.phone || clientPhone || '').trim();
-    let finalClientAddress = (clientAddress || req.user?.address || '').trim();
-    const isGuest = !req.user;
+    // 1. Consultar servicios solicitados y calcular duración y total COP
+    const services = await prisma.service.findMany({
+      where: { id: { in: serviceIds }, isActive: true },
+    });
 
-    if (isGuest) {
-      if (!finalClientName) {
-        return sendError(res, 400, 'Por favor ingresa tu nombre completo.');
-      }
-      if (!finalClientEmail || !finalClientEmail.includes('@')) {
-        return sendError(res, 400, 'Por favor ingresa un correo electrónico válido.');
-      }
-      if (!finalClientPhone) {
-        return sendError(res, 400, 'Por favor ingresa tu número de teléfono.');
-      }
+    if (services.length !== serviceIds.length) {
+      return sendError(res, 400, 'Uno o varios de los servicios seleccionados no están disponibles.');
+    }
 
-      const digitsOnly = finalClientPhone.replace(/\D/g, '');
-      const validPhone = (digitsOnly.length >= 10 ? digitsOnly.slice(-10) : digitsOnly.padStart(10, '0')) || '3000000000';
+    const totalDurationMin = services.reduce((acc, s) => acc + s.durationMinutes, 0);
+    const totalPriceCOP = services.reduce((acc, s) => acc + s.priceCOP, 0);
 
-      // Buscar si ya existe un usuario con este correo
-      let guestUser = await User.findOne({ email: finalClientEmail });
-      if (!guestUser) {
-        const randomPass = `SH-${Math.random().toString(36).substring(2, 10)}!`;
-        guestUser = await User.create({
-          name: finalClientName,
-          email: finalClientEmail,
-          phone: validPhone,
-          password: randomPass,
-          role: 'cliente',
-          isVerified: false,
-          address: finalClientAddress,
+    const start = new Date(startTime);
+    const end = new Date(start.getTime() + totalDurationMin * 60 * 1000);
+
+    // Formatear teléfono colombiano (+57)
+    let cleanPhone = clientPhone.replace(/\D/g, '');
+    if (cleanPhone.length === 10) cleanPhone = `+57${cleanPhone}`;
+    else if (!cleanPhone.startsWith('+')) cleanPhone = `+${cleanPhone}`;
+
+    // 2. Transacción de alta concurrencia
+    const appointment = await prisma.$transaction(async (tx) => {
+      // Upsert usuario cliente por teléfono
+      let clientUser = await tx.user.findUnique({
+        where: { phone: cleanPhone },
+      });
+
+      if (!clientUser) {
+        clientUser = await tx.user.create({
+          data: {
+            phone: cleanPhone,
+            name: clientName,
+            email: clientEmail ? clientEmail.toLowerCase().trim() : null,
+            role: 'CLIENT',
+            clientProfile: {
+              create: {
+                preferredBarberId: barberId,
+              },
+            },
+          },
         });
       } else {
-        if (finalClientAddress && !guestUser.address) {
-          guestUser.address = finalClientAddress;
-          await guestUser.save();
-        }
-      }
-      clientId = guestUser._id;
-    } else {
-      // Si el usuario ya está autenticado y envió dirección, guardarla
-      if (finalClientAddress && !req.user.address) {
-        await User.findByIdAndUpdate(clientId, { address: finalClientAddress });
-      }
-    }
-
-    // Generar código único de confirmación
-    const confirmationCode = `SH-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
-
-    const appointment = await Appointment.create({
-      client: clientId,
-      barber: targetBarberUser._id,
-      services: services.map((s) => ({
-        service: s._id,
-        price: s.price,
-        duration: s.duration,
-      })),
-      date: localDate,
-      startTime,
-      endTime,
-      totalPrice,
-      totalDuration,
-      notes: notes || '',
-      paymentMethod: paymentMethod || 'efectivo',
-      confirmationCode,
-      clientName: finalClientName,
-      clientEmail: finalClientEmail,
-      clientPhone: finalClientPhone,
-      clientAddress: finalClientAddress,
-      isGuest,
-    });
-
-    if (clientId) {
-      await User.findByIdAndUpdate(clientId, { $inc: { totalAppointments: 1 } });
-    }
-
-    // Notificación en la app para el barbero
-    await createNotification({
-      recipient: targetBarberUser._id,
-      type: 'nueva_cita',
-      title: '¡Nueva cita reservada!',
-      message: `${finalClientName} reservó una cita para el ${localDate.toLocaleDateString('es-CO')} a las ${startTime}.`,
-      data: { appointmentId: appointment._id },
-    });
-
-    const populatedAppointment = await Appointment.findById(appointment._id)
-      .populate('client', 'name email phone avatar address')
-      .populate('barber', 'name email phone avatar')
-      .populate('services.service', 'name price duration category');
-
-    // Enviar correos automáticos al cliente y al barbero
-    try {
-      if (finalClientEmail) {
-        sendAppointmentConfirmationEmail(populatedAppointment);
-      }
-      if (populatedAppointment.barber?.email) {
-        sendAppointmentNotificationToBarber(populatedAppointment);
-      }
-    } catch (emailErr) {
-      console.error('Error enviando correos de confirmación:', emailErr);
-    }
-
-    return sendSuccess(res, 201, '¡Cita reservada exitosamente! Se envió confirmación al correo.', {
-      appointment: populatedAppointment,
-      confirmationCode,
-    });
-  } catch (error) {
-    console.error('Error al crear la cita:', error);
-    return sendError(res, 500, 'Error al crear la cita.');
-  }
-};
-
-// @desc    Obtener horarios disponibles
-// @route   GET /api/appointments/available-slots
-// @access  Public
-exports.getAvailableSlots = async (req, res) => {
-  try {
-    const { barberId, date, duration, serviceDuration } = req.query;
-
-    if (!date) {
-      return sendError(res, 400, 'La fecha es requerida.');
-    }
-
-    const durationMinutes = parseInt(duration || serviceDuration, 10) || 40;
-    const { startOfDay, endOfDay, dayOfWeek, localDate } = parseLocalDateRange(date);
-
-    // Si seleccionó un barbero específico válido
-    const isValidBarberId = barberId && barberId !== 'any' && barberId !== 'undefined' && barberId !== 'null';
-
-    if (isValidBarberId) {
-      let barber = null;
-      if (mongoose.Types.ObjectId.isValid(barberId)) {
-        barber = await Barber.findOne({
-          $or: [{ user: barberId }, { _id: barberId }],
+        // Actualizar nombre o email si vienen nuevos
+        await tx.user.update({
+          where: { id: clientUser.id },
+          data: {
+            name: clientName,
+            ...(clientEmail ? { email: clientEmail.toLowerCase().trim() } : {}),
+          },
         });
       }
 
-      // Si no se encuentra con el ID enviado, intentar encontrar el barbero por coincidencia de usuario o primer barbero activo
-      if (!barber) {
-        barber = await Barber.findOne({ isAvailable: true });
+      // Registrar consentimiento de Habeas Data (auditoría Ley 1581)
+      await tx.habeasDataConsent.create({
+        data: {
+          userId: clientUser.id,
+          policyVersion: 'v1.0-2026-10',
+          acceptedTerms: true,
+          acceptedMarketing: Boolean(acceptMarketing),
+          ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1',
+          userAgent: req.headers['user-agent'] || 'Desconocido',
+        },
+      });
+
+      // Validar si el slot sigue disponible
+      const conflict = await tx.appointment.findFirst({
+        where: {
+          barberId,
+          status: { in: ['CONFIRMED', 'IN_PROGRESS'] },
+          AND: [
+            { startTime: { lt: end } },
+            { endTime: { gt: start } },
+          ],
+        },
+      });
+
+      if (conflict) {
+        throw new Error('CONCURRENCY_SLOT_TAKEN');
       }
 
-      if (!barber || !barber.isAvailable) {
-        return sendSuccess(res, 200, 'Barbero no disponible.', { slots: [] });
-      }
+      // Generar código de reserva y token de autogestión firmado
+      const bookingCode = generateBookingCode();
+      const actionToken = crypto.randomBytes(24).toString('hex');
+      const actionTokenExpiry = new Date(Date.now() + 30 * 24 * 3600 * 1000); // 30 días
 
-      const daySchedule = extractDaySchedule(barber, dayOfWeek);
+      // Crear la cita
+      const newApt = await tx.appointment.create({
+        data: {
+          bookingCode,
+          clientId: clientUser.id,
+          barberId,
+          startTime: start,
+          endTime: end,
+          totalDurationMin,
+          totalPriceCOP,
+          status: 'CONFIRMED',
+          clientNotes: clientNotes || null,
+          actionToken,
+          actionTokenExpiry,
+          items: {
+            create: services.map((s) => ({
+              serviceId: s.id,
+              priceCOP: s.priceCOP,
+              durationMinutes: s.durationMinutes,
+            })),
+          },
+          emailLogs: {
+            create: [
+              {
+                recipientType: 'CLIENT',
+                toEmail: clientEmail || `${cleanPhone}@sms.local`,
+                subject: `Tu cita en Punto Fino está confirmada — [${bookingCode}]`,
+                status: 'QUEUED',
+              },
+            ],
+          },
+        },
+        include: {
+          barber: {
+            include: { user: true },
+          },
+          items: {
+            include: { service: true },
+          },
+          client: true,
+        },
+      });
 
-      if (!daySchedule.isWorking) {
-        return sendSuccess(res, 200, 'Sin disponibilidad ese día.', { slots: [] });
-      }
-
-      // Obtener citas ya agendadas de ese barbero (buscando tanto por User._id como por Barber._id)
-      const bUserIds = [barber.user, barber._id].filter(Boolean);
-      const bookedAppointments = await Appointment.find({
-        barber: { $in: bUserIds },
-        date: { $gte: startOfDay, $lte: endOfDay },
-        status: { $nin: ['cancelada', 'no_show'] },
-      }).select('startTime endTime totalDuration');
-
-      const startWorkMins = timeToMinutes(daySchedule.startTime || '09:00');
-      const endWorkMins = timeToMinutes(daySchedule.endTime || '20:00');
-      const breakStartMins = timeToMinutes(daySchedule.breakStart || '13:00');
-      const breakEndMins = timeToMinutes(daySchedule.breakEnd || '14:00');
-
-      const availableSlots = [];
-      const now = new Date();
-      const isToday = localDate.toDateString() === now.toDateString();
-      const currentMinutesToday = now.getHours() * 60 + now.getMinutes() + 15;
-
-      // Evaluar slots cada 30 minutos
-      for (let slotMins = startWorkMins; slotMins + durationMinutes <= endWorkMins; slotMins += 30) {
-        if (isToday && slotMins < currentMinutesToday) continue;
-
-        const slotEndMins = slotMins + durationMinutes;
-
-        // Verificar descanso / almuerzo si tiene definido horario de descanso
-        if (breakStartMins && breakEndMins && breakStartMins < breakEndMins) {
-          if (slotMins < breakEndMins && slotEndMins > breakStartMins) continue;
-        }
-
-        // Verificar conflicto con citas agendadas
-        const hasConflict = bookedAppointments.some((apt) => {
-          const aStart = timeToMinutes(apt.startTime);
-          const aEnd = apt.endTime ? timeToMinutes(apt.endTime) : aStart + (apt.totalDuration || 40);
-          return slotMins < aEnd && slotEndMins > aStart;
+      // Liberar o asociar el hold si venía holdId
+      if (holdId) {
+        await tx.slotHold.updateMany({
+          where: { id: holdId },
+          data: { appointmentId: newApt.id },
         });
-
-        if (!hasConflict) {
-          availableSlots.push(minutesToTime(slotMins));
-        }
       }
 
-      return sendSuccess(res, 200, 'Slots disponibles obtenidos.', { slots: availableSlots });
-    }
-
-    // Si no especificó barbero o es 'any': unir slots de todos los barberos activos
-    const allBarbers = await Barber.find({ isAvailable: true });
-    const allSlotsSet = new Set();
-
-    const now = new Date();
-    const isToday = localDate.toDateString() === now.toDateString();
-    const currentMinutesToday = now.getHours() * 60 + now.getMinutes() + 15;
-
-    for (const b of allBarbers) {
-      const daySchedule = extractDaySchedule(b, dayOfWeek);
-
-      if (!daySchedule.isWorking) continue;
-
-      const bUserIds = [b.user, b._id].filter(Boolean);
-      const bookedAppointments = await Appointment.find({
-        barber: { $in: bUserIds },
-        date: { $gte: startOfDay, $lte: endOfDay },
-        status: { $nin: ['cancelada', 'no_show'] },
-      }).select('startTime endTime totalDuration');
-
-      const startWorkMins = timeToMinutes(daySchedule.startTime || '09:00');
-      const endWorkMins = timeToMinutes(daySchedule.endTime || '20:00');
-      const breakStartMins = timeToMinutes(daySchedule.breakStart || '13:00');
-      const breakEndMins = timeToMinutes(daySchedule.breakEnd || '14:00');
-
-      for (let slotMins = startWorkMins; slotMins + durationMinutes <= endWorkMins; slotMins += 30) {
-        if (isToday && slotMins < currentMinutesToday) continue;
-
-        const slotEndMins = slotMins + durationMinutes;
-        if (breakStartMins && breakEndMins && breakStartMins < breakEndMins) {
-          if (slotMins < breakEndMins && slotEndMins > breakStartMins) continue;
-        }
-
-        const hasConflict = bookedAppointments.some((apt) => {
-          const aStart = timeToMinutes(apt.startTime);
-          const aEnd = apt.endTime ? timeToMinutes(apt.endTime) : aStart + (apt.totalDuration || 40);
-          return slotMins < aEnd && slotEndMins > aStart;
-        });
-
-        if (!hasConflict) {
-          allSlotsSet.add(minutesToTime(slotMins));
-        }
-      }
-    }
-
-    const sortedSlots = Array.from(allSlotsSet).sort((a, b) => timeToMinutes(a) - timeToMinutes(b));
-    return sendSuccess(res, 200, 'Slots disponibles obtenidos.', { slots: sortedSlots });
-  } catch (error) {
-    console.error('Error en getAvailableSlots:', error);
-    return sendError(res, 500, 'Error al obtener horarios disponibles.');
-  }
-};
-
-// @desc    Obtener mis citas (cliente)
-// @route   GET /api/appointments/my-appointments
-// @access  Private
-exports.getMyAppointments = async (req, res) => {
-  try {
-    const { status, page = 1, limit = 10 } = req.query;
-    const query = { client: req.user.id };
-    if (status) query.status = status;
-
-    const appointments = await Appointment.find(query)
-      .populate('barber', 'name phone avatar email')
-      .populate('services.service', 'name price duration category')
-      .sort({ date: -1, startTime: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
-
-    const total = await Appointment.countDocuments(query);
-
-    return sendSuccess(res, 200, 'Citas obtenidas.', {
-      appointments,
-      pagination: { total, page: parseInt(page), pages: Math.ceil(total / limit) },
+      return newApt;
     });
-  } catch (error) {
-    return sendError(res, 500, 'Error al obtener citas.');
-  }
-};
 
-// @desc    Cancelar cita
-// @route   PUT /api/appointments/:id/cancel
-// @access  Private
-exports.cancelAppointment = async (req, res) => {
-  try {
-    const appointment = await Appointment.findById(req.params.id);
-
-    if (!appointment) {
-      return sendError(res, 404, 'Cita no encontrada.');
-    }
-
-    const isOwner = appointment.client.toString() === req.user.id;
-    const isBarber = appointment.barber.toString() === req.user.id;
-    const isAdmin = req.user.role === 'admin';
-
-    if (!isOwner && !isBarber && !isAdmin) {
-      return sendError(res, 403, 'No tienes permiso para cancelar esta cita.');
-    }
-
-    if (['completada', 'cancelada'].includes(appointment.status)) {
-      return sendError(res, 400, 'Esta cita no se puede cancelar.');
-    }
-
-    appointment.status = 'cancelada';
-    appointment.cancelReason = req.body.reason || 'Sin razón especificada';
-    appointment.cancelledBy = req.user.id;
-    await appointment.save();
-
-    // Notificar al cliente si cancela el barbero/admin
-    if (isBarber || isAdmin) {
-      await createNotification({
-        recipient: appointment.client,
-        type: 'cita_cancelada',
-        title: 'Tu cita fue cancelada',
-        message: `Tu cita del ${new Date(appointment.date).toLocaleDateString('es-CO')} a las ${appointment.startTime} fue cancelada.`,
-        data: { appointmentId: appointment._id },
-      });
-    }
-
-    return sendSuccess(res, 200, 'Cita cancelada.', { appointment });
-  } catch (error) {
-    return sendError(res, 500, 'Error al cancelar la cita.');
-  }
-};
-
-// @desc    Actualizar estado de cita (barbero/admin)
-// @route   PUT /api/appointments/:id/status
-// @access  Private (barbero, admin)
-exports.updateAppointmentStatus = async (req, res) => {
-  try {
-    const { status } = req.body;
-    const validStatuses = ['confirmada', 'en_progreso', 'completada', 'no_show'];
-
-    if (!validStatuses.includes(status)) {
-      return sendError(res, 400, 'Estado inválido.');
-    }
-
-    const appointment = await Appointment.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    )
-      .populate('client', 'name email')
-      .populate('barber', 'name');
-
-    if (!appointment) {
-      return sendError(res, 404, 'Cita no encontrada.');
-    }
-
-    // Si se completó, dar puntos de fidelidad al cliente
-    if (status === 'completada') {
-      const points = Math.floor(appointment.totalPrice / 1000);
-      await User.findByIdAndUpdate(appointment.client, { $inc: { loyaltyPoints: points } });
-
-      await createNotification({
-        recipient: appointment.client._id,
-        type: 'cita_completada',
-        title: '¡Cita completada!',
-        message: `Ganaste ${points} puntos de fidelidad. ¡Gracias por visitarnos!`,
-        data: { appointmentId: appointment._id, points },
-      });
-    }
-
-    return sendSuccess(res, 200, 'Estado actualizado.', { appointment });
-  } catch (error) {
-    return sendError(res, 500, 'Error al actualizar estado.');
-  }
-};
-
-// @desc    Obtener citas del barbero
-// @route   GET /api/appointments/barber-appointments
-// @access  Private (barbero)
-exports.getBarberAppointments = async (req, res) => {
-  try {
-    const { date, status, startDate, endDate, barberId } = req.query;
-    let targetId = req.user.id;
-    if (req.user.role === 'admin' && barberId && barberId !== 'all') {
-      targetId = barberId;
-    }
-    let barberDoc = null;
-    if (mongoose.Types.ObjectId.isValid(targetId)) {
-      barberDoc = await Barber.findOne({
-        $or: [{ user: targetId }, { _id: targetId }]
-      });
-    }
-    const barberIds = [targetId, barberDoc?.user, barberDoc?._id].filter(Boolean);
-    const query = { barber: { $in: barberIds } };
-
-    if (startDate && endDate) {
-      const sParts = startDate.split('T')[0].split('-').map(Number);
-      const eParts = endDate.split('T')[0].split('-').map(Number);
-      const start = new Date(sParts[0], sParts[1] - 1, sParts[2], 0, 0, 0, 0);
-      const end = new Date(eParts[0], eParts[1] - 1, eParts[2], 23, 59, 59, 999);
-      query.date = { $gte: start, $lte: end };
-    } else if (date) {
-      const parts = date.split('T')[0].split('-').map(Number);
-      const start = new Date(parts[0], parts[1] - 1, parts[2], 0, 0, 0, 0);
-      const end = new Date(parts[0], parts[1] - 1, parts[2], 23, 59, 59, 999);
-      query.date = { $gte: start, $lte: end };
-    }
-
-    if (status && status !== 'todos') query.status = status;
-
-    const appointments = await Appointment.find(query)
-      .populate('client', 'name email phone avatar loyaltyPoints')
-      .populate('services.service', 'name price duration category')
-      .sort({ date: 1, startTime: 1 });
-
-    return sendSuccess(res, 200, 'Citas del barbero obtenidas.', { appointments });
-  } catch (error) {
-    return sendError(res, 500, 'Error al obtener citas del barbero.');
-  }
-};
-
-// @desc    Obtener todas las citas (Admin) con filtros y paginación
-// @route   GET /api/appointments
-// @access  Private (admin)
-exports.getAllAppointments = async (req, res) => {
-  try {
-    const { page = 1, limit = 20, status, date, barberId, search } = req.query;
-    const query = {};
-
-    if (status && status !== 'todos') query.status = status;
-
-    if (date) {
-      const parts = date.split('T')[0].split('-').map(Number);
-      const start = new Date(parts[0], parts[1] - 1, parts[2], 0, 0, 0, 0);
-      const end = new Date(parts[0], parts[1] - 1, parts[2], 23, 59, 59, 999);
-      query.date = { $gte: start, $lte: end };
-    }
-
-    if (barberId && barberId !== 'all') {
-      const bDoc = await Barber.findById(barberId);
-      if (bDoc) {
-        query.barber = { $in: [bDoc.user, bDoc._id].filter(Boolean) };
-      } else if (mongoose.Types.ObjectId.isValid(barberId)) {
-        query.barber = new mongoose.Types.ObjectId(barberId);
-      }
-    }
-
-    if (search && search.trim()) {
-      const sRegex = new RegExp(search.trim(), 'i');
-      query.$or = [
-        { clientName: sRegex },
-        { clientEmail: sRegex },
-        { clientPhone: sRegex },
-        { confirmationCode: sRegex },
-      ];
-    }
-
-    const appointments = await Appointment.find(query)
-      .populate('client', 'name email phone avatar')
-      .populate('barber', 'name email phone avatar')
-      .populate('services.service', 'name price duration category')
-      .sort({ date: -1, startTime: -1 })
-      .skip((page - 1) * limit)
-      .limit(Number(limit));
-
-    const total = await Appointment.countDocuments(query);
-
-    return sendSuccess(res, 200, 'Todas las citas obtenidas.', {
-      appointments,
-      pagination: {
-        total,
-        page: Number(page),
-        pages: Math.ceil(total / limit),
+    return sendSuccess(res, 201, '¡Tu cita en Punto Fino está confirmada!', {
+      bookingCode: appointment.bookingCode,
+      actionToken: appointment.actionToken,
+      appointment: {
+        id: appointment.id,
+        bookingCode: appointment.bookingCode,
+        barberName: appointment.barber.user.name,
+        barberNickname: appointment.barber.nickname,
+        startTime: appointment.startTime,
+        endTime: appointment.endTime,
+        totalDurationMin: appointment.totalDurationMin,
+        totalPriceCOP: appointment.totalPriceCOP,
+        items: appointment.items.map((i) => ({
+          name: i.service.name,
+          priceCOP: i.priceCOP,
+          duration: i.durationMinutes,
+        })),
       },
     });
   } catch (error) {
-    console.error('Error en getAllAppointments:', error);
-    return sendError(res, 500, 'Error al obtener citas.');
+    if (error.message === 'CONCURRENCY_SLOT_TAKEN') {
+      return sendError(res, 409, 'El horario acaba de ser ocupado. Por favor seleccioná otra hora.');
+    }
+    console.error('Error al crear cita:', error);
+    return sendError(res, 500, 'Error al procesar la reserva.');
+  }
+};
+
+// @desc    Consultar cita por código de reserva (Público)
+// @route   GET /api/appointments/code/:code
+// @access  Public
+exports.getAppointmentByCode = async (req, res) => {
+  try {
+    const { code } = req.params;
+    const appointment = await prisma.appointment.findUnique({
+      where: { bookingCode: code.toUpperCase() },
+      include: {
+        barber: {
+          include: { user: { select: { name: true, phone: true } } },
+        },
+        client: {
+          select: { name: true, phone: true, email: true },
+        },
+        items: {
+          include: { service: true },
+        },
+      },
+    });
+
+    if (!appointment) {
+      return sendError(res, 404, 'No encontramos ninguna cita con ese código de reserva.');
+    }
+
+    return sendSuccess(res, 200, 'Cita encontrada.', { appointment });
+  } catch (error) {
+    console.error(error);
+    return sendError(res, 500, 'Error al consultar la cita.');
+  }
+};
+
+// @desc    Reprogramar o cancelar cita mediante enlace seguro con token (Sin login)
+// @route   POST /api/appointments/token/:token/:action
+// @access  Public (Token HMAC firmado)
+exports.manageAppointmentByToken = async (req, res) => {
+  try {
+    const { token, action } = req.params; // action: 'cancel' | 'reschedule'
+    const { newStartTime } = req.body;
+
+    const appointment = await prisma.appointment.findUnique({
+      where: { actionToken: token },
+      include: { barber: true },
+    });
+
+    if (!appointment) {
+      return sendError(res, 404, 'Enlace no válido o expirado.');
+    }
+
+    if (appointment.actionTokenExpiry < new Date()) {
+      return sendError(res, 400, 'Este enlace de autogestión ha caducado.');
+    }
+
+    if (action === 'cancel') {
+      const updated = await prisma.appointment.update({
+        where: { id: appointment.id },
+        data: {
+          status: 'CANCELLED',
+          actionToken: null, // De un solo uso
+        },
+      });
+      return sendSuccess(res, 200, 'Tu cita ha sido cancelada exitosamente.', { appointment: updated });
+    }
+
+    if (action === 'reschedule') {
+      if (!newStartTime) {
+        return sendError(res, 400, 'Debes enviar la nueva fecha y hora (newStartTime).');
+      }
+
+      const start = new Date(newStartTime);
+      const end = new Date(start.getTime() + appointment.totalDurationMin * 60 * 1000);
+
+      // Validar colisión en la nueva hora
+      const conflict = await prisma.appointment.findFirst({
+        where: {
+          barberId: appointment.barberId,
+          status: { in: ['CONFIRMED', 'IN_PROGRESS'] },
+          id: { not: appointment.id },
+          AND: [
+            { startTime: { lt: end } },
+            { endTime: { gt: start } },
+          ],
+        },
+      });
+
+      if (conflict) {
+        return sendError(res, 409, 'El nuevo horario ya no está disponible. Elegí otra hora.');
+      }
+
+      const updated = await prisma.appointment.update({
+        where: { id: appointment.id },
+        data: {
+          startTime: start,
+          endTime: end,
+          actionToken: null, // De un solo uso
+        },
+      });
+
+      return sendSuccess(res, 200, 'Tu cita ha sido reprogramada exitosamente.', { appointment: updated });
+    }
+
+    return sendError(res, 400, 'Acción no soportada.');
+  } catch (error) {
+    console.error(error);
+    return sendError(res, 500, 'Error al gestionar la cita.');
+  }
+};
+
+// @desc    Listar citas para el staff y administración
+// @route   GET /api/appointments
+// @access  Private (Staff)
+exports.getAppointments = async (req, res) => {
+  try {
+    const { barberId, date, status } = req.query;
+    const where = {};
+
+    if (barberId) where.barberId = barberId;
+    if (status) where.status = status;
+
+    if (date) {
+      const startOfDay = new Date(`${date}T00:00:00.000-05:00`);
+      const endOfDay = new Date(`${date}T23:59:59.999-05:00`);
+      where.startTime = { gte: startOfDay, lte: endOfDay };
+    }
+
+    // Si el usuario es BARBER, solo ve sus propias citas salvo que sea ADMIN
+    if (req.user.role === 'BARBER' && req.user.barberProfile) {
+      where.barberId = req.user.barberProfile.id;
+    }
+
+    const appointments = await prisma.appointment.findMany({
+      where,
+      orderBy: { startTime: 'asc' },
+      include: {
+        client: { select: { name: true, phone: true } },
+        barber: { select: { nickname: true } },
+        items: { include: { service: true } },
+      },
+    });
+
+    return sendSuccess(res, 200, 'Citas obtenidas.', {
+      count: appointments.length,
+      appointments,
+    });
+  } catch (error) {
+    console.error(error);
+    return sendError(res, 500, 'Error al consultar las citas.');
+  }
+};
+
+// @desc    Actualizar estado de la cita (En Silla, Finalizado, No-Show)
+// @route   PUT /api/appointments/:id/status
+// @access  Private (Staff)
+exports.updateStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const updated = await prisma.appointment.update({
+      where: { id },
+      data: { status },
+    });
+
+    return sendSuccess(res, 200, `Estado actualizado a ${status}.`, { appointment: updated });
+  } catch (error) {
+    console.error(error);
+    return sendError(res, 500, 'Error al actualizar el estado de la cita.');
   }
 };

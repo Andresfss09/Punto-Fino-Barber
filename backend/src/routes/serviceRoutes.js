@@ -1,20 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const {
-  getAllServices,
-  getService,
+  getServices,
+  getServiceBySlug,
   createService,
   updateService,
   deleteService,
 } = require('../controllers/serviceController');
-const { protect } = require('../middlewares/auth');
-const { authorize } = require('../middlewares/roles');
+const { protect, authorize } = require('../middlewares/auth');
 
-router.get('/', getAllServices);
-router.get('/:id', getService);
-router.use(protect);
-router.post('/', authorize('admin'), createService);
-router.put('/:id', authorize('admin'), updateService);
-router.delete('/:id', authorize('admin'), deleteService);
+// Rutas públicas
+router.get('/', getServices);
+router.get('/:slug', getServiceBySlug);
+
+// Rutas administrativas
+router.post('/', protect, authorize('ADMIN', 'SUPER_ADMIN'), createService);
+router.put('/:id', protect, authorize('ADMIN', 'SUPER_ADMIN'), updateService);
+router.delete('/:id', protect, authorize('ADMIN', 'SUPER_ADMIN'), deleteService);
 
 module.exports = router;

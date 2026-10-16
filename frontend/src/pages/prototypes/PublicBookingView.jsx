@@ -689,3 +689,4 @@ export default function PublicBookingView() {
     </div>
   );
 }
+
