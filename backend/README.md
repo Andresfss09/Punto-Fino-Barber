@@ -87,3 +87,4 @@ Para ejecutar las pruebas automáticas contra la base de datos Neon:
 node src/tests/test_api_fase2.js
 ```
 **Resultado:** 15 / 15 pruebas superadas con éxito.
+

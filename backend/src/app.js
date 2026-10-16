@@ -47,6 +47,7 @@ app.use('/api/barbers', require('./routes/barberRoutes'));
 app.use('/api/reviews', require('./routes/reviewRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/webhooks', require('./routes/webhookRoutes'));
 
 // Health check
 app.get('/api/health', (req, res) => {

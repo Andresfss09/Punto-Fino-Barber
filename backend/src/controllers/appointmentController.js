@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const prisma = require('../config/prisma');
 const { sendSuccess, sendError } = require('../utils/helpers');
+const emailQueue = require('../services/emailQueue');
 
 // Helper para generar código de reserva legible (ej. PF-7429)
 const generateBookingCode = () => {
@@ -265,6 +266,11 @@ exports.createAppointment = async (req, res) => {
       return newApt;
     });
 
+    // Disparar de forma asíncrona la terna de correos (Cliente, Barbero, Admin)
+    const io = req.app?.get?.('io');
+    if (io) emailQueue.setSocketIO(io);
+    emailQueue.enqueueBookingEmails(appointment.id);
+
     return sendSuccess(res, 201, '¡Tu cita en Punto Fino está confirmada!', {
       bookingCode: appointment.bookingCode,
       actionToken: appointment.actionToken,
@@ -354,6 +360,11 @@ exports.manageAppointmentByToken = async (req, res) => {
           actionToken: null, // De un solo uso
         },
       });
+
+      const io = req.app?.get?.('io');
+      if (io) emailQueue.setSocketIO(io);
+      emailQueue.enqueueCancellationEmails(appointment.id);
+
       return sendSuccess(res, 200, 'Tu cita ha sido cancelada exitosamente.', { appointment: updated });
     }
 
@@ -382,16 +393,28 @@ exports.manageAppointmentByToken = async (req, res) => {
         return sendError(res, 409, 'El nuevo horario ya no está disponible. Elegí otra hora.');
       }
 
+      // Renovar token de acción para futuras modificaciones
+      const newActionToken = crypto.randomBytes(24).toString('hex');
+      const newActionTokenExpiry = new Date(Date.now() + 30 * 24 * 3600 * 1000);
+
       const updated = await prisma.appointment.update({
         where: { id: appointment.id },
         data: {
           startTime: start,
           endTime: end,
-          actionToken: null, // De un solo uso
+          actionToken: newActionToken,
+          actionTokenExpiry: newActionTokenExpiry,
         },
       });
 
-      return sendSuccess(res, 200, 'Tu cita ha sido reprogramada exitosamente.', { appointment: updated });
+      const io = req.app?.get?.('io');
+      if (io) emailQueue.setSocketIO(io);
+      emailQueue.enqueueRescheduleEmails(appointment.id);
+
+      return sendSuccess(res, 200, 'Tu cita ha sido reprogramada exitosamente.', {
+        appointment: updated,
+        actionToken: newActionToken,
+      });
     }
 
     return sendError(res, 400, 'Acción no soportada.');

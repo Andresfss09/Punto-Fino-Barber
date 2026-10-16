@@ -52,53 +52,49 @@ export default function Navbar() {
   return (
     <header className="fixed top-0 left-0 right-0 z-40">
       {/* Top Utility Announcement Bar — Clean Barbershop Info */}
-      <div className="bg-[#0a0a0a] text-[#888888] text-xs font-sans py-2.5 px-4 sm:px-8 lg:px-12 border-b border-[#1e1e1e]">
+      <div className="bg-[#111215] text-[#9B988F] text-xs font-sans py-2.5 px-4 sm:px-8 lg:px-12 border-b border-white/10">
         <div className="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
           {/* Location / Presence */}
-          <div className="flex items-center gap-2 text-[#cccccc]">
-            <MapPin size={13} className="text-[#cfa53b] shrink-0" />
+          <div className="flex items-center gap-2 text-[#F7F5F0]">
+            <MapPin size={13} className="text-[#E15233] shrink-0" />
             <span className="font-mono uppercase tracking-wider text-xs">
-              Barbería Triadix · Cali, Colombia
+              Punto Fino · Barrio Tequendama, Calle 5ta #38-24, Cali
             </span>
           </div>
 
           {/* Schedule & WhatsApp */}
           <div className="flex items-center gap-6">
-            <span className="hidden md:inline font-mono uppercase tracking-wider text-xs text-[#888888]">
-              Lun-Sáb 09:00 - 20:30 · Dom 09:00 - 16:00
+            <span className="hidden md:inline font-mono uppercase tracking-wider text-xs text-[#9B988F]">
+              Mar-Sáb 09:00 - 20:00 · Dom 09:00 - 15:00
             </span>
             <a
-              href="https://wa.me/573122398964?text=Hola,%20me%20gustar%C3%ADa%20agendar%20una%20cita%20en%20Barber%C3%ADa%20Triadix"
+              href="https://wa.me/573158294012?text=Hola,%20quisiera%20consultar%20por%20una%20cita%20en%20Punto%20Fino%20Cali"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 font-mono text-xs text-[#ffffff] hover:text-[#cfa53b] transition-colors"
+              className="flex items-center gap-1.5 font-mono text-xs text-[#F7F5F0] hover:text-[#E15233] transition-colors"
             >
               <MessageCircle size={13} className="text-[#25D366] shrink-0" />
-              <span>WhatsApp: 312 239 8964</span>
+              <span>WhatsApp: +57 315 829 4012</span>
             </a>
           </div>
         </div>
       </div>
 
       {/* Main Navigation Bar */}
-      <div className="bg-black/95 backdrop-blur-md border-b border-[#1e1e1e]">
+      <div className="bg-[#111215]/95 backdrop-blur-md border-b border-white/10">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12">
           <div className="flex items-center justify-between h-20 py-2">
             {/* Logo Brand */}
             <Link to="/" className="flex items-center gap-3.5 group">
-              <div className="relative">
-                <img
-                  src="/logo.png"
-                  alt="Barbería Triadix"
-                  className="w-12 h-12 object-contain rounded-none border border-[#262626] group-hover:border-[#cfa53b] transition-all duration-300 p-1 bg-black shadow-md"
-                />
+              <div className="w-10 h-10 rounded-md bg-[#18191E] border border-white/10 flex items-center justify-center font-display font-extrabold text-[#E15233] text-xl group-hover:border-[#E15233] transition-colors">
+                PF
               </div>
               <div className="flex flex-col">
-                <span className="font-sans uppercase font-bold text-xl text-white tracking-[0.22em] leading-none group-hover:text-[#cfa53b] transition-colors">
-                  Triadix
+                <span className="font-display uppercase font-extrabold text-xl text-[#F7F5F0] tracking-wider leading-none group-hover:text-[#E15233] transition-colors">
+                  PUNTO FINO
                 </span>
-                <span className="text-[10px] text-[#cfa53b] font-sans tracking-[0.24em] uppercase font-semibold mt-1">
-                  Barbería · Cali
+                <span className="text-[10px] text-[#E15233] font-mono tracking-widest uppercase font-semibold mt-1">
+                  Barbería de Barrio · Cali
                 </span>
               </div>
             </Link>

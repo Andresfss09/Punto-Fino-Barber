@@ -7,7 +7,7 @@ import BeveragesSection from '../components/home/BeveragesSection';
 import BarbersSection from '../components/home/BarbersSection';
 import ReviewsSection from '../components/home/ReviewsSection';
 import LocationSection from '../components/home/LocationSection';
-import BookingWizard from '../components/booking/BookingWizard';
+import PublicBookingView from './prototypes/PublicBookingView';
 
 export default function HomePage() {
   const location = useLocation();
@@ -37,20 +37,20 @@ export default function HomePage() {
         <div className="max-w-[1400px] mx-auto px-4 sm:px-8 lg:px-12 relative z-10">
           <div className="text-center mb-16">
             <div className="flex items-center justify-center gap-2.5 mb-3">
-              <span className="w-2.5 h-2.5 bg-[#cfa53b]"></span>
-              <span className="font-sans text-xs sm:text-sm uppercase tracking-[0.26em] text-[#cfa53b] font-bold">
-                04 · RESERVA TU CITA EN TRIADIX
+              <span className="w-2.5 h-2.5 bg-pf-terracota"></span>
+              <span className="font-mono text-xs uppercase tracking-[0.2em] text-pf-terracota font-bold">
+                RESERVA TU SILLA EN PUNTO FINO · TEQUENDAMA
               </span>
             </div>
-            <h2 className="font-sans uppercase text-4xl sm:text-5xl lg:text-6xl text-white font-black tracking-normal sm:tracking-[0.02em] leading-tight">
-              Agenda tu Cita
+            <h2 className="font-display uppercase text-3xl sm:text-5xl text-pf-bone font-bold tracking-tight">
+              Agendá tu Turno
             </h2>
-            <p className="text-[#aaaaaa] text-sm sm:text-base max-w-2xl mx-auto mt-4 font-sans leading-relaxed">
-              Selecciona tu servicio, tu barbero de confianza y el horario que mejor te quede. Reserva online en menos de 1 minuto sin necesidad de crear cuenta.
+            <p className="text-pf-muted text-xs sm:text-sm max-w-xl mx-auto mt-2 font-sans leading-relaxed">
+              Elegí tu corte, tu barbero y tu horario. Proceso directo de barrio, sin registros ni apps para clientes.
             </p>
           </div>
 
-          <BookingWizard isEmbedded={true} />
+          <PublicBookingView />
         </div>
       </section>
 
