@@ -101,7 +101,7 @@ export const AdminAuditScreen: React.FC = () => {
           <Text style={styles.badgeText}>PANEL DE CONTROL ADMINISTRATIVO</Text>
         </View>
         <Text style={styles.title}>Arqueo de Caja & Equipo</Text>
-        <Text style={styles.subtitle}>Consolidado del día · Punto Fino Tequendama</Text>
+        <Text style={styles.subtitle}>Consolidado del día · Punto Fino Villacolombia</Text>
       </View>
 
       {/* KPI Principal */}

@@ -6,26 +6,36 @@ const { sendSuccess, sendError } = require('../utils/helpers');
 // @access  Public
 exports.getBarbers = async (req, res) => {
   try {
-    const barbers = await prisma.barberProfile.findMany({
-      where: { isActive: true },
-      orderBy: { sortOrder: 'asc' },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-            email: true,
+    const [barbers, allServices] = await Promise.all([
+      prisma.barberProfile.findMany({
+        where: { isActive: true },
+        orderBy: { sortOrder: 'asc' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+              email: true,
+            },
           },
+          schedules: true,
         },
-        services: {
-          include: {
-            service: true,
-          },
-        },
-        schedules: true,
-      },
-    });
+      }),
+      prisma.service.findMany({
+        where: { isActive: true },
+        orderBy: { sortOrder: 'asc' },
+      }),
+    ]);
+
+    const formattedServices = allServices.map((s) => ({
+      id: s.id,
+      name: s.name,
+      priceCOP: s.priceCOP,
+      durationMinutes: s.durationMinutes,
+      category: s.category,
+      badge: s.badge || null,
+    }));
 
     const formatted = barbers.map((b) => ({
       id: b.id,
@@ -33,14 +43,8 @@ exports.getBarbers = async (req, res) => {
       name: b.user.name,
       nickname: b.nickname,
       bio: b.bio,
-      avatarUrl: b.avatarUrl,
       commissionRate: Number(b.commissionRate),
-      services: b.services.map((bs) => ({
-        id: bs.service.id,
-        name: bs.service.name,
-        priceCOP: bs.customPriceCOP || bs.service.priceCOP,
-        durationMinutes: bs.customDuration || bs.service.durationMinutes,
-      })),
+      services: formattedServices,
       schedules: b.schedules,
     }));
 

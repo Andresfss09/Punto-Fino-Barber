@@ -1,4 +1,4 @@
-// Prisma Schema para Punto Fino - Barbería de Barrio (Santiago de Cali, Colombia)
+// Prisma Schema para Punto Fino - Villacolombia (Santiago de Cali, Colombia)
 // Base de Datos: Neon Serverless PostgreSQL
 
 generator client {
@@ -80,13 +80,11 @@ model BarberProfile {
   user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   nickname        String          // Ej: "El Fino", "El Primo", "Junior"
   bio             String?
-  avatarUrl       String?
   // NOTA LEGAL: REVISAR CON CONTADOR / ABOGADO LABORAL (honorarios vs. salario)
   commissionRate  Decimal         @default(0.50) @db.Decimal(5, 2)
   isActive        Boolean         @default(true)
   sortOrder       Int             @default(0)
 
-  services        BarberService[]
   schedules       BarberSchedule[]
   absences        BarberAbsence[]
   appointments    Appointment[]   @relation("BarberAppointments")
@@ -158,25 +156,12 @@ model Service {
   isActive        Boolean         @default(true)
   sortOrder       Int             @default(0)
 
-  barbers         BarberService[]
   appointmentItems AppointmentItem[]
 
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
   @@index([isActive, category])
-}
-
-model BarberService {
-  barberId        String
-  serviceId       String
-  customPriceCOP  Int?
-  customDuration  Int?
-
-  barber          BarberProfile   @relation(fields: [barberId], references: [id], onDelete: Cascade)
-  service         Service         @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-
-  @@id([barberId, serviceId])
 }
 
 // -------------------------------------------------------------

@@ -3,6 +3,8 @@
  * Compatible con Google Calendar, Apple Calendar, Outlook y dispositivos móviles.
  */
 
+const BUSINESS_CONFIG = require('../config/businessConfig');
+
 const formatICSDate = (date) => {
   const d = new Date(date);
   return d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
@@ -22,7 +24,7 @@ exports.generateICS = (appointment, client, barber, services) => {
   const bookingCode = appointment.bookingCode || 'PF-CITA';
 
   const summary = `Cita en Punto Fino — ${barberName} [${bookingCode}]`;
-  const location = `Punto Fino Barbería, Calle 5ta #38-24, Barrio Tequendama, Santiago de Cali, Colombia`;
+  const location = `Punto Fino, ${BUSINESS_CONFIG.location.fullAddress}`;
   
   const manageUrl = appointment.actionToken 
     ? `${process.env.CLIENT_URL || 'http://localhost:5173'}/cita/${appointment.actionToken}`

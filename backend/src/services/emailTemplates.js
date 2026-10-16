@@ -26,6 +26,8 @@ const baseStyles = `
   .email-footer { background-color: #111215; padding: 20px 24px; text-align: center; border-top: 1px solid rgba(255,255,255,0.06); font-size: 11px; color: #6A6862; }
 `;
 
+const BUSINESS_CONFIG = require('../config/businessConfig');
+
 // 1. CORREO AL CLIENTE: "Tu cita en Punto Fino está confirmada"
 exports.buildClientConfirmationEmail = ({ appointment, client, barber, services }) => {
   const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
@@ -67,14 +69,14 @@ exports.buildClientConfirmationEmail = ({ appointment, client, barber, services 
       <div class="email-wrapper">
         <div class="email-container">
           <div class="email-header">
-            <div class="brand-eyebrow">BARBERÍA DE BARRIO · SANTIAGO DE CALI</div>
+            <div class="brand-eyebrow">VILLACOLOMBIA · SANTIAGO DE CALI</div>
             <h1 class="brand-title">PUNTO FINO</h1>
             <div class="brand-tagline">Oficio, paciencia y corte al milímetro</div>
           </div>
           <div class="email-body">
-            <h2 class="email-h1">¡Qué hubo, ${client.name}! Tu cita está confirmada.</h2>
+            <h2 class="email-h1">¡Hola, ${client.name}! Tu cita está confirmada.</h2>
             <p class="email-text">
-              Te guardamos el puesto en la silla. Aquí tenés todos los detalles de tu turno para que llegués con calma y frescura al local en Tequendama.
+              Te guardamos el puesto en la silla. Aquí tenés todos los detalles de tu turno para que llegués con calma y frescura a nuestra sede en Villacolombia.
             </p>
 
             <div class="ticket-box">
@@ -86,7 +88,7 @@ exports.buildClientConfirmationEmail = ({ appointment, client, barber, services 
               </div>
 
               <div style="margin-bottom:10px;">
-                <span class="ticket-label">Barbero de Confianza:</span>
+                <span class="ticket-label">Barbero:</span>
                 <div class="ticket-val" style="margin-top:2px;">${barber.name} ("${barber.nickname}")</div>
               </div>
 
@@ -115,9 +117,9 @@ exports.buildClientConfirmationEmail = ({ appointment, client, barber, services 
 
               <div style="padding-top:12px;border-top:1px dashed rgba(255,255,255,0.08);margin-top:12px;">
                 <span class="ticket-label">Dirección del Local:</span>
-                <div class="ticket-val" style="margin-top:2px;">Calle 5ta #38-24, Barrio Tequendama, Cali</div>
+                <div class="ticket-val" style="margin-top:2px;">${BUSINESS_CONFIG.location.shortAddress}</div>
                 <div style="margin-top:4px;">
-                  <a href="https://maps.google.com/?q=Calle+5ta+38-24+Cali+Colombia" target="_blank" style="color:#E15233;font-size:11px;text-decoration:underline;">
+                  <a href="${BUSINESS_CONFIG.location.googleMapsUrl}" target="_blank" style="color:#E15233;font-size:11px;text-decoration:underline;">
                     📍 Abrir ubicación en Google Maps / Waze →
                   </a>
                 </div>
@@ -142,12 +144,12 @@ exports.buildClientConfirmationEmail = ({ appointment, client, barber, services 
             </div>
 
             <p style="font-size:11px;color:#6A6862;line-height:1.5;">
-              <strong>Política de cancelación:</strong> Si te surge un imprevisto, te agradecemos reprogramar o cancelar con al menos 2 horas de anticipación para que otro vecino de Cali pueda aprovechar el cupo.<br>
-              <strong>Contacto directo:</strong> Escribinos al WhatsApp <a href="https://wa.me/573158294012" style="color:#9B988F;">+57 315 829 4012</a>.
+              <strong>Política de cancelación:</strong> Si te surge un imprevisto, te agradecemos reprogramar o cancelar con al menos 2 horas de anticipación.<br>
+              <strong>Contacto directo:</strong> Escribinos al WhatsApp <a href="${BUSINESS_CONFIG.contact.whatsappUrl}" style="color:#9B988F;">${BUSINESS_CONFIG.contact.phoneFormatted}</a>.
             </p>
           </div>
           <div class="email-footer">
-            Punto Fino Barbería · Santiago de Cali, Valle del Cauca, Colombia<br>
+            Punto Fino · ${BUSINESS_CONFIG.location.fullAddress}<br>
             Este es un correo transaccional en estricto cumplimiento de la Ley 1581 de 2012 (Habeas Data).
           </div>
         </div>
@@ -157,19 +159,19 @@ exports.buildClientConfirmationEmail = ({ appointment, client, barber, services 
   `;
 
   const text = `
-¡Qué hubo, ${client.name}! Tu cita en Punto Fino está confirmada.
+¡Hola, ${client.name}! Tu cita en Punto Fino está confirmada.
 
 Código de Reserva: ${appointment.bookingCode}
 Barbero: ${barber.name} ("${barber.nickname}")
 Fecha: ${formattedDate} a las ${formattedTime} (Hora de Colombia)
 Total a pagar: $ ${appointment.totalPriceCOP.toLocaleString('es-CO')} COP
-Dirección: Calle 5ta #38-24, Barrio Tequendama, Santiago de Cali
+Dirección: ${BUSINESS_CONFIG.location.shortAddress}
 
 Para reprogramar o cancelar tu cita sin contraseñas:
 ${manageUrl}
 
 Encuentra adjunto el archivo .ics para agregar tu turno al calendario.
-WhatsApp de atención: +57 315 829 4012
+WhatsApp de atención: ${BUSINESS_CONFIG.contact.phoneFormatted}
   `.trim();
 
   return { html, text };

@@ -39,14 +39,14 @@ export default function HomePage() {
             <div className="flex items-center justify-center gap-2.5 mb-3">
               <span className="w-2.5 h-2.5 bg-pf-terracota"></span>
               <span className="font-mono text-xs uppercase tracking-[0.2em] text-pf-terracota font-bold">
-                RESERVA TU SILLA EN PUNTO FINO · TEQUENDAMA
+                RESERVA TU SILLA EN PUNTO FINO · VILLACOLOMBIA
               </span>
             </div>
             <h2 className="font-display uppercase text-3xl sm:text-5xl text-pf-bone font-bold tracking-tight">
               Agendá tu Turno
             </h2>
             <p className="text-pf-muted text-xs sm:text-sm max-w-xl mx-auto mt-2 font-sans leading-relaxed">
-              Elegí tu corte, tu barbero y tu horario. Proceso directo de barrio, sin registros ni apps para clientes.
+              Elegí tu corte, tu barbero y tu horario. Proceso ágil y directo, sin registros ni apps para clientes.
             </p>
           </div>
 

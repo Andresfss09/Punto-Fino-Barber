@@ -1,6 +1,6 @@
 /**
  * Sistema de Diseño "Punto Fino" - Tokens para React Native
- * Estética de Taller de Sastre y Barbería de Barrio (Santiago de Cali)
+ * Estética de Taller de Sastre y Oficio Tradicional (Villacolombia · Cali)
  */
 
 export const colors = {

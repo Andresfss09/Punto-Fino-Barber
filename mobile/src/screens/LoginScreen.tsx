@@ -112,8 +112,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             <Text style={styles.badgeText}>ACCESO EXCLUSIVO PERSONAL</Text>
           </View>
           <Text style={styles.brandTitle}>PUNTO FINO</Text>
-          <Text style={styles.brandSubtitle}>Taller de Barbería · Santiago de Cali</Text>
-          <Text style={styles.brandLocation}>Calle 5ta #38-24 · Barrio Tequendama</Text>
+          <Text style={styles.brandSubtitle}>Corte & Cuidado Masculino · Santiago de Cali</Text>
+          <Text style={styles.brandLocation}>Carrera 12 #53-51 · Barrio Villacolombia</Text>
         </View>
 
         {/* Formulario */}
@@ -124,7 +124,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
               <User size={16} color={colors.muted} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="brayan@puntofino.com o 315..."
+                placeholder="juandavid@puntofino.co o 312..."
                 placeholderTextColor={colors.subtle}
                 value={identifier}
                 onChangeText={setIdentifier}

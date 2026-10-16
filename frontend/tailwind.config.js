@@ -32,9 +32,9 @@ export default {
         },
       },
       fontFamily: {
-        display: ['Syne', 'sans-serif'],
-        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        display: ['"Instrument Serif"', 'serif'],
+        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'monospace'],
       },
       borderRadius: {
         none: '0px',

@@ -48,22 +48,13 @@ export default function BarberProfile() {
         {/* Profile Card */}
         <div className="bg-[#121113] border border-[#2b292d] rounded-[6px] p-6 flex flex-col sm:flex-row items-center justify-between gap-6 relative shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]">
           <div className="flex flex-col sm:flex-row items-center gap-5">
-            <div className="relative">
-              <div className="w-20 h-20 rounded-[6px] bg-[#1a191b] border border-[#2b292d] flex items-center justify-center font-mono text-2xl text-[#71d083] font-semibold overflow-hidden">
-                {user?.name?.charAt(0) || 'B'}
-              </div>
-              <label 
-                className="absolute -bottom-2 -right-2 bg-[#71d083] text-[#04040b] p-1.5 rounded-[4px] cursor-pointer transition-transform hover:scale-105 shadow-sm"
-                title="Cambiar foto de perfil"
-              >
-                <Camera size={13} />
-                <input type="file" className="hidden" accept="image/*" />
-              </label>
+            <div className="w-20 h-20 rounded-[6px] bg-[#1a191b] border border-[#2b292d] flex items-center justify-center font-display text-3xl text-[#71d083] font-bold">
+              {user?.name?.slice(0, 2).toUpperCase() || 'PF'}
             </div>
             
             <div className="text-center sm:text-left">
               <h2 className="font-sans font-semibold tracking-[-0.015em] text-lg text-[#eeeef0]">{user?.name || 'Maestro Barbero'}</h2>
-              <p className="text-[#71d083] font-mono text-xs uppercase tracking-wider mt-0.5">Barbero Titular · Triadix</p>
+              <p className="text-[#71d083] font-mono text-xs uppercase tracking-wider mt-0.5">Barbero Oficial · Punto Fino</p>
               <p className="text-[#888888] text-xs font-mono mt-1">{user?.email}</p>
             </div>
           </div>

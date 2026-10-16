@@ -4,7 +4,7 @@ const Service = require('../models/Service');
 
 const services = [
   {
-    name: 'Combo Completo Triadix (Corte + Barba + Facial)',
+    name: 'Experiencia Platinium (VIP Todo Incluido)',
     description: 'El servicio más completo: corte a tu gusto, arreglo y perfilado de barba a navaja, toalla caliente, exfoliación facial suave y mascarilla refrescante.',
     price: 55000,
     duration: 60,
@@ -87,7 +87,7 @@ const seed = async () => {
     await connectDB();
     await Service.deleteMany({});
     await Service.insertMany(services);
-    console.log('✅ Servicios de Triadix creados correctamente');
+    console.log('✅ Servicios de Punto Fino creados correctamente');
     process.exit(0);
   } catch (error) {
     console.error('❌ Error:', error.message);

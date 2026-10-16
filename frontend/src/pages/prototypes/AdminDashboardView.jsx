@@ -204,7 +204,7 @@ export default function AdminDashboardView() {
     },
     {
       id: 'c3',
-      name: 'Don Jaime (Vecino Tequendama)',
+      name: 'Don Jaime (Vecino Villacolombia)',
       phone: '+57 318 777 9900',
       email: 'jaime.vecino@gmail.com',
       stamps: 3,
@@ -212,7 +212,7 @@ export default function AdminDashboardView() {
       totalSpent: 300000,
       lastVisit: 'Hoy 12:00 PM',
       formula: 'Corte tradicional clásico de tijera, peinado hacia un lado, patillas cuadradas naturales.',
-      barber: 'Andrés Mosquera',
+      barber: 'Juan David',
     },
     {
       id: 'c4',
@@ -224,7 +224,7 @@ export default function AdminDashboardView() {
       totalSpent: 135000,
       lastVisit: 'Ayer',
       formula: 'Combo completo con ritual de barba. Piel reactiva en garganta, aplicar bálsamo de caléndula.',
-      barber: 'Carlos Valencia',
+      barber: 'Emanuel Torres',
     },
   ]);
 
@@ -268,7 +268,7 @@ export default function AdminDashboardView() {
             <Shield className="w-3.5 h-3.5" /> SUPERFICIE 3: PANEL WEB DE ADMINISTRACIÓN & RECEPCIÓN/CAJA
           </span>
           <h2 className="text-2xl font-display font-bold text-pf-bone">
-            Consola Operativa · Punto Fino Tequendama
+            Consola Operativa · Punto Fino Villacolombia
           </h2>
           <p className="text-xs text-pf-muted">
             Monitoreo en tiempo real de sillas, caja física/digital, catálogo de insumos, nómina y fichas técnicas de clientes.
@@ -377,7 +377,7 @@ export default function AdminDashboardView() {
             <div className="flex items-center justify-between">
               <h3 className="font-display font-bold text-lg text-pf-bone flex items-center gap-2">
                 <Scissors className="w-4 h-4 text-pf-terracota" />
-                <span>Estado Multi-Silla en Vivo (Barrio Tequendama)</span>
+                <span>Estado Multi-Silla en Vivo (Barrio Villacolombia)</span>
               </h3>
               <span className="text-xs font-mono text-pf-muted">Actualizado hace instantes</span>
             </div>

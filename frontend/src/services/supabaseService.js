@@ -134,7 +134,7 @@ export const supabaseService = {
           return {
             appointment_id: data.id,
             service_id: sId,
-            service_name: typeof s === 'object' && s.name ? s.name : 'Experiencia Triadix',
+            service_name: typeof s === 'object' && s.name ? s.name : 'Experiencia Punto Fino',
             price: (typeof s === 'object' && s.price) ? s.price : (appointmentData.totalPrice || 0),
             duration: (typeof s === 'object' && s.duration) ? s.duration : (appointmentData.totalDuration || 35),
           };

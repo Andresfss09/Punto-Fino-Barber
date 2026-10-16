@@ -54,7 +54,7 @@ const slideVariants = {
 const FALLBACK_SERVICES = [
   {
     _id: '6ab429b351b742ce20f96ab4',
-    name: 'Combo Completo Triadix (Corte + Barba + Facial)',
+    name: 'Experiencia Platinium (Todo Incluido)',
     description: 'El servicio más completo: corte a tu gusto, arreglo y perfilado de barba a navaja, toalla caliente, exfoliación facial suave y mascarilla refrescante.',
     price: 55000,
     duration: 60,
@@ -124,31 +124,28 @@ const FALLBACK_BARBERS = [
   {
     _id: 'a1111111-1111-1111-1111-111111111111',
     user: {
-      name: 'Andrés Felipe Sarria',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
+      name: 'Juan David',
     },
-    specialties: ['Degradados Fade', 'Cortes Clásicos', 'Asesoría de Estilo'],
-    rating: { average: 4.9, count: 24 },
+    bio: 'Barbero y Administrador de Punto Fino. Especialista en la Experiencia Punto Fino y visagismo masculino.',
+    rating: { average: 5.0, count: 48 },
     isAvailable: true,
   },
   {
     _id: 'b2222222-2222-2222-2222-222222222222',
     user: {
-      name: 'Nicolás Chávez',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80',
+      name: 'Emanuel Torres',
     },
-    specialties: ['Arreglo de Barba', 'Afeitado a Navaja', 'Toalla Caliente'],
-    rating: { average: 5.0, count: 28 },
+    bio: 'Barbero profesional con amplia trayectoria en Santiago de Cali. Maestro en degradados modernos y ritual de barba.',
+    rating: { average: 4.9, count: 39 },
     isAvailable: true,
   },
   {
     _id: 'c3333333-3333-3333-3333-333333333333',
     user: {
-      name: 'Luis De Ávila',
-      avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=400&q=80',
+      name: 'Juan Diego',
     },
-    specialties: ['Fade en Tendencia', 'Perfilado de Cejas', 'Corte a Tijera'],
-    rating: { average: 4.9, count: 19 },
+    bio: 'Dedicado al oficio del corte masculino y la precisión a tijera y máquina.',
+    rating: { average: 5.0, count: 42 },
     isAvailable: true,
   },
 ];
@@ -172,7 +169,7 @@ export default function BookingWizard() {
     name: user?.name || user?.nombre || '',
     email: user?.email || '',
     phone: user?.phone || user?.telefono || '',
-    address: 'Barbería Triadix · Cali, Colombia',
+    address: 'Punto Fino · Villacolombia, Cali',
   });
 
   // State lists
@@ -373,7 +370,7 @@ export default function BookingWizard() {
   if (bookingSuccess) {
     const apt = bookingSuccess.appointment || {};
     const code = bookingSuccess.confirmationCode || apt.confirmationCode || 'TX-CONFIRMADA';
-    const barberName = apt.barber?.name || selectedBarber?.user?.name || 'Barbero Triadix';
+    const barberName = apt.barber?.name || selectedBarber?.user?.name || 'Barbero Punto Fino';
     const clientEmail = clientData.email;
 
     return (
@@ -383,7 +380,7 @@ export default function BookingWizard() {
           <div className="inline-flex items-center gap-2 bg-[#141414] border border-[#262626] px-4 py-1.5 rounded-none mb-6">
             <Sparkles size={14} className="text-white" />
             <span className="text-xs uppercase font-sans tracking-[0.2em] text-white font-medium">
-              Reserva Confirmada · Triadix
+              Reserva Confirmada · Punto Fino
             </span>
           </div>
 
@@ -470,7 +467,7 @@ export default function BookingWizard() {
               Agendar Otra
             </button>
             <a
-              href={`https://wa.me/573122398964?text=Hola,%20acabo%20de%20agendar%20mi%20cita%20con%20c%C3%B3digo%20${code}%20en%20Triadix`}
+              href={`https://wa.me/573122398964?text=Hola,%20acabo%20de%20agendar%20mi%20cita%20con%20c%C3%B3digo%20${code}%20en%20Punto%20Fino`}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full sm:w-auto btn-ferrari-primary text-xs !py-2.5 !px-5"

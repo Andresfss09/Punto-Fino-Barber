@@ -78,7 +78,6 @@ exports.login = async (req, res) => {
         barberProfile: user.barberProfile ? {
           id: user.barberProfile.id,
           nickname: user.barberProfile.nickname,
-          avatarUrl: user.barberProfile.avatarUrl,
           commissionRate: Number(user.barberProfile.commissionRate),
         } : null,
       },

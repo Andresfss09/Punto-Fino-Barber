@@ -333,7 +333,7 @@ export default function AdminDashboard({ initialTab = 'stats' }) {
 
       exportToPdf({
         title: 'REPORTE EJECUTIVO DE NÓMINA Y SERVICIOS',
-        subtitle: 'Triadix Barber Studio · Control de Pagos y Liquidaciones',
+        subtitle: 'Punto Fino · Control de Pagos y Liquidaciones',
         periodLabel: rangeText,
         summary: data.summary,
         tables: [
@@ -348,7 +348,7 @@ export default function AdminDashboard({ initialTab = 'stats' }) {
             rows: serviceRows,
           },
         ],
-        fileName: `Reporte_Nomina_Triadix_${new Date().toISOString().slice(0, 10)}`,
+        fileName: `Reporte_Nomina_Punto_Fino_${new Date().toISOString().slice(0, 10)}`,
       });
 
       toast.success('Reporte PDF oficial generado exitosamente');
@@ -418,7 +418,7 @@ export default function AdminDashboard({ initialTab = 'stats' }) {
                 ADMINISTRACIÓN & CONTABILIDAD
               </span>
               <span className="text-[10px] text-[#7c7a85] font-mono uppercase">
-                · Triadix Terminal
+                · Punto Fino Terminal
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-sans font-semibold tracking-[-0.025em] text-[#e5e5e5]">
@@ -651,7 +651,7 @@ export default function AdminDashboard({ initialTab = 'stats' }) {
                       </span>
                     </div>
                     <p className="text-[11px] uppercase font-sans tracking-[0.025em] text-[#7c7a85] mb-1">
-                      Ganancia Triadix
+                      Ganancia Barbería
                     </p>
                     <p className="text-2xl sm:text-3xl font-mono font-medium text-[#e5e5e5] tracking-tight">
                       {formatCurrency(data.summary.netBarbershopEarnings)}
@@ -844,7 +844,7 @@ export default function AdminDashboard({ initialTab = 'stats' }) {
                               </span>
                             </div>
                             <div className="flex justify-between text-[#b5b2bc]">
-                              <span className="text-[#7c7a85]">Ganancia Triadix:</span>
+                              <span className="text-[#7c7a85]">Ganancia Barbería:</span>
                               <span className="font-mono text-[#7c7a85]">
                                 {formatCurrency(barber.barbershopShare)}
                               </span>
@@ -1173,7 +1173,7 @@ export default function AdminDashboard({ initialTab = 'stats' }) {
         >
           <div className="space-y-4">
             <p className="text-xs text-[#b5b2bc] font-sans leading-relaxed">
-              Define el porcentaje de comisión que recibirá este barbero por cada corte o servicio realizado en Triadix.
+              Define el porcentaje de comisión que recibirá este barbero por cada corte o servicio realizado en Punto Fino.
             </p>
 
             <div>

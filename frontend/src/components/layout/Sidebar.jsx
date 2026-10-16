@@ -31,13 +31,13 @@ export default function Sidebar() {
       {/* Logo Area */}
       <div className="h-16 py-3 flex items-center gap-3 px-5 border-b border-[#2b292d]">
         <img
-          src="/logo.png"
-          alt="Barbería Triadix"
+          src="/images/punto-fino/logo.png"
+          alt="Punto Fino"
           className="w-8 h-8 object-contain rounded-[4px] border border-[#2b292d] p-0.5 bg-[#1a191b]"
         />
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="font-sans font-medium uppercase tracking-[-0.025em] text-xs text-[#e5e5e5] leading-none">TRIADIX</h2>
+            <h2 className="font-sans font-medium uppercase tracking-[-0.025em] text-xs text-[#e5e5e5] leading-none">PUNTO FINO</h2>
             <span className="w-1.5 h-1.5 rounded-full bg-[#71d083] shadow-[0_0_6px_#71d083]"></span>
           </div>
           <span className="text-[9px] text-[#71d083] tracking-[0.025em] font-mono uppercase block mt-1">Consola Staff</span>

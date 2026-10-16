@@ -15,19 +15,6 @@ exports.getServices = async (req, res) => {
     const services = await prisma.service.findMany({
       where,
       orderBy: { sortOrder: 'asc' },
-      include: {
-        barbers: {
-          include: {
-            barber: {
-              select: {
-                id: true,
-                nickname: true,
-                avatarUrl: true,
-              },
-            },
-          },
-        },
-      },
     });
 
     return sendSuccess(res, 200, 'Servicios obtenidos exitosamente.', {
@@ -48,13 +35,6 @@ exports.getServiceBySlug = async (req, res) => {
     const { slug } = req.params;
     const service = await prisma.service.findUnique({
       where: { slug },
-      include: {
-        barbers: {
-          include: {
-            barber: true,
-          },
-        },
-      },
     });
 
     if (!service || !service.isActive) {

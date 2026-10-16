@@ -11,9 +11,9 @@ async function seedDashboardData() {
     console.log('✅ Conectado a MongoDB Atlas');
 
     // 1. Obtener Barberos
-    const nicolasUser = await User.findOne({ email: { $in: ['barbero@triadix.co', 'nicolas@triadix.co', 'carlos@puntofino.com'] } }) || await User.findOne({ role: 'barbero' });
-    const andresUser = await User.findOne({ email: { $in: ['andres@triadix.co', 'juan.david@puntofino.com'] } }) || nicolasUser;
-    const luisUser = await User.findOne({ email: { $in: ['luis@triadix.co', 'emanuel@puntofino.com'] } }) || nicolasUser;
+    const nicolasUser = await User.findOne({ email: { $in: ['juandavid@puntofino.co', 'admin@puntofino.co'] } }) || await User.findOne({ role: 'barbero' });
+    const andresUser = await User.findOne({ email: { $in: ['emanuel@puntofino.co', 'barbero@puntofino.co'] } }) || nicolasUser;
+    const luisUser = await User.findOne({ email: { $in: ['juandiego@puntofino.co'] } }) || nicolasUser;
 
     if (!nicolasUser) {
       console.error('❌ No se encontró ningún barbero registrado en la base de datos.');
@@ -41,16 +41,16 @@ async function seedDashboardData() {
 
     await Appointment.deleteMany({
       date: { $gte: today, $lt: tomorrow },
-      confirmationCode: { $regex: /^TRIADIX-/ },
+      confirmationCode: { $regex: /^PF-/ },
     });
 
     console.log('🧹 Citas de prueba previas limpiadas');
 
     // 4. Crear Citas de Prueba para HOY y MAÑANA
     const testAppointments = [
-      // --- NICOLÁS CHÁVEZ (barbero@triadix.co) ---
+      // --- JUAN DAVID (juandavid@puntofino.co) ---
       {
-        confirmationCode: 'TRIADIX-01',
+        confirmationCode: 'PF-01',
         barber: nicolasUser._id,
         clientName: 'Santiago Osorio',
         clientPhone: '315 890 1234',
@@ -70,7 +70,7 @@ async function seedDashboardData() {
         notes: 'Cliente habitual, degradado medio navaja y toalla caliente.',
       },
       {
-        confirmationCode: 'TRIADIX-02',
+        confirmationCode: 'PF-02',
         barber: nicolasUser._id,
         clientName: 'Mateo Morales',
         clientPhone: '310 456 7890',
@@ -90,7 +90,7 @@ async function seedDashboardData() {
         notes: 'Experiencia VIP completa con mascarilla y vapor de ozono.',
       },
       {
-        confirmationCode: 'TRIADIX-03',
+        confirmationCode: 'PF-03',
         barber: nicolasUser._id,
         clientName: 'David Bermúdez',
         clientPhone: '318 765 4321',
@@ -110,7 +110,7 @@ async function seedDashboardData() {
         notes: 'En silla en este momento, perfilado de cejas incluido.',
       },
       {
-        confirmationCode: 'TRIADIX-04',
+        confirmationCode: 'PF-04',
         barber: nicolasUser._id,
         clientName: 'Alejandro Gómez',
         clientPhone: '312 345 6789',
@@ -130,7 +130,7 @@ async function seedDashboardData() {
         notes: 'Cita programada para la tarde, puntual.',
       },
       {
-        confirmationCode: 'TRIADIX-05',
+        confirmationCode: 'PF-05',
         barber: nicolasUser._id,
         clientName: 'Camilo Torres',
         clientPhone: '316 987 6543',
@@ -150,9 +150,9 @@ async function seedDashboardData() {
         notes: 'Corte clásico + lavado.',
       },
 
-      // --- ANDRÉS FELIPE SARRIA (andres@triadix.co) ---
+      // --- EMANUEL TORRES (emanuel@puntofino.co) ---
       {
-        confirmationCode: 'TRIADIX-06',
+        confirmationCode: 'PF-06',
         barber: andresUser._id,
         clientName: 'Sebastián Pérez',
         clientPhone: '314 234 5678',
@@ -172,7 +172,7 @@ async function seedDashboardData() {
         notes: 'Corte fade con arreglo de barba.',
       },
       {
-        confirmationCode: 'TRIADIX-07',
+        confirmationCode: 'PF-07',
         barber: andresUser._id,
         clientName: 'Felipe Caicedo',
         clientPhone: '317 345 6789',
@@ -192,7 +192,7 @@ async function seedDashboardData() {
         notes: 'Degradado limpio a navaja.',
       },
       {
-        confirmationCode: 'TRIADIX-08',
+        confirmationCode: 'PF-08',
         barber: andresUser._id,
         clientName: 'Daniel Rivas',
         clientPhone: '311 456 7890',
@@ -212,9 +212,9 @@ async function seedDashboardData() {
         notes: 'Perfilado de barba con toalla tibia.',
       },
 
-      // --- LUIS DE ÁVILA (luis@triadix.co) ---
+      // --- JUAN DIEGO (juandiego@puntofino.co) ---
       {
-        confirmationCode: 'TRIADIX-09',
+        confirmationCode: 'PF-09',
         barber: luisUser._id,
         clientName: 'Javier Mina',
         clientPhone: '319 567 8901',
@@ -234,7 +234,7 @@ async function seedDashboardData() {
         notes: 'Servicio Gold VIP completo.',
       },
       {
-        confirmationCode: 'TRIADIX-10',
+        confirmationCode: 'PF-10',
         barber: luisUser._id,
         clientName: 'Carlos Restrepo',
         clientPhone: '313 678 9012',

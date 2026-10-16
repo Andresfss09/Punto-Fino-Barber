@@ -87,7 +87,7 @@ export default function PrototypeHub() {
                   FASE 1: PROTOTIPOS
                 </span>
               </div>
-              <div className="text-[10px] text-pf-muted">Santiago de Cali, Colombia · Barbería de Barrio</div>
+              <div className="text-[10px] text-pf-muted">Santiago de Cali, Colombia · Villacolombia</div>
             </div>
           </div>
 

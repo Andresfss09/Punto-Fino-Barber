@@ -51,7 +51,7 @@ app.use('/api/webhooks', require('./routes/webhookRoutes'));
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ success: true, message: 'Triadix API funcionando ✅', time: new Date() });
+  res.json({ success: true, message: 'Punto Fino API funcionando ✅', time: new Date() });
 });
 
 // Manejador de rutas no encontradas

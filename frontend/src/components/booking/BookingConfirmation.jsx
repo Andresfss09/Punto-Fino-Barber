@@ -158,7 +158,7 @@ export default function BookingConfirmation({
         <h3 className="font-sans font-medium uppercase tracking-[0.2em] text-sm text-white mb-6 border-b border-[#1e1e1e] pb-4 flex items-center justify-between">
           <span>Resumen de la Cita</span>
           <span className="px-2 py-0.5 border border-[#222222] bg-[#141414] text-[10px] font-sans font-medium uppercase tracking-[0.16em] text-[#cfa53b]">
-            Barbería Triadix
+            Punto Fino
           </span>
         </h3>
         
@@ -372,7 +372,7 @@ export default function BookingConfirmation({
           ) : (
             <>
               <Check size={16} strokeWidth={2.5} />
-              Confirmar Cita en Triadix
+              Confirmar Cita en Punto Fino
             </>
           )}
         </button>

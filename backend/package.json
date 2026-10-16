@@ -1,7 +1,7 @@
 {
-  "name": "triadix-backend",
+  "name": "punto-fino-backend",
   "version": "1.0.0",
-  "description": "API REST para Triadix Barber Studio",
+  "description": "API REST para Punto Fino",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",

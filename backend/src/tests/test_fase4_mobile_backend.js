@@ -111,7 +111,7 @@ async function runTests() {
         Authorization: `Bearer ${brayanToken}`,
       },
       body: JSON.stringify({
-        clientName: 'Don Jaime (Vecino Tequendama)',
+        clientName: 'Don Jaime (Vecino Villacolombia)',
         clientPhone: '3157891122',
         serviceIds: [corteService.id],
         barberNotes: 'Fade #1 en sienes, cerquillo recto con navaja, remolino atrás a tijera.',

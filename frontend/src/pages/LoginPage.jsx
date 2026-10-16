@@ -1,250 +1,277 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, Scissors, Eye, EyeOff, User, Crown, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { authService } from '../services/authService';
 import useAuthStore from '../store/useAuthStore';
-import Input from '../components/ui/Input';
-import Button from '../components/ui/Button';
+import { BUSINESS_CONFIG } from '../config/businessConfig';
 
 const loginSchema = z.object({
-  email: z.string().email('Email inválido'),
-  password: z.string().min(1, 'La contraseña es requerida'),
+  email: z
+    .string()
+    .min(1, 'El correo electrónico es requerido')
+    .email('Ingresa un correo electrónico válido'),
+  password: z
+    .string()
+    .min(1, 'La contraseña es requerida'),
 });
 
-const roles = [
-  {
-    id: 'barbero',
-    label: 'Barbero',
-    description: 'Controla tu agenda diaria y citas',
-    icon: Scissors,
-    color: 'from-gold-500 to-gold-700',
-    border: 'border-gold-400/40',
-    bg: 'bg-[#121815]',
-    text: 'text-gold-400',
-    emoji: '✂️',
-  },
-  {
-    id: 'admin',
-    label: 'Administrador',
-    description: 'Gestión total, nómina y métricas de la barbería',
-    icon: Crown,
-    color: 'from-zinc-700 to-zinc-900',
-    border: 'border-[#333d38]',
-    bg: 'bg-[#121815]',
-    text: 'text-[#dfdbca]',
-    emoji: '👑',
-  },
-];
-
 export default function LoginPage() {
-  const [selectedRole, setSelectedRole] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { setAuth } = useAuthStore();
   const navigate = useNavigate();
 
-  const { register, handleSubmit, formState: { errors }, reset } = useForm({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
     resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
   });
-
-  const handleRoleSelect = (roleId) => {
-    setSelectedRole(roleId);
-    reset();
-  };
 
   const onSubmit = async (data) => {
     setLoading(true);
     try {
-      const response = await authService.login(data);
-      const userRole = response.user.role;
+      const response = await authService.login({
+        email: data.email.trim().toLowerCase(),
+        password: data.password,
+      });
 
-      if (userRole !== selectedRole) {
-        toast.error(`Esta cuenta no es de tipo "${roles.find(r => r.id === selectedRole)?.label}". Tu rol es: ${userRole}`);
-        setLoading(false);
-        return;
+      const user = response.user;
+      setAuth(user, response.token);
+
+      const firstName = user.name ? user.name.split(' ')[0] : 'Colaborador';
+      toast.success(`Bienvenido a Punto Fino, ${firstName}`);
+
+      // Detección automática de rol y redirección inteligente
+      if (user.role === 'admin') {
+        navigate('/admin');
+      } else if (user.role === 'barbero') {
+        navigate('/barber');
+      } else {
+        navigate('/');
       }
-
-      setAuth(response.user, response.token);
-      toast.success(`¡Bienvenido a Triadix, ${response.user.name.split(' ')[0]}!`);
-
-      if (userRole === 'admin') navigate('/admin');
-      else if (userRole === 'barbero') navigate('/barber');
-      else navigate('/');
     } catch (error) {
-      toast.error(error.message || 'Credenciales incorrectas');
+      console.error('Error al iniciar sesión:', error);
+      toast.error(error.message || 'Credenciales incorrectas. Verifica tu correo y contraseña.');
     } finally {
       setLoading(false);
     }
   };
 
-  const activeRole = roles.find((r) => r.id === selectedRole);
-
   return (
-    <div className="min-h-screen bg-[#000000] flex items-center justify-center px-4 py-16">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-[#0b0c0e] text-[#F7F5F0] flex flex-col md:grid md:grid-cols-12">
+      
+      {/* Columna Izquierda: Imagen de Oficio & Marca (Solo en pantallas medianas y grandes) */}
+      <div className="hidden md:flex md:col-span-5 lg:col-span-6 relative flex-col justify-between p-10 lg:p-14 overflow-hidden border-r border-white/10 bg-black">
+        {/* Fotografía de Fondo con atmósfera real de barbería */}
+        <div className="absolute inset-0">
+          <img
+            src="/images/punto-fino/ritual-vapor-facial.png"
+            alt="Oficio en Punto Fino Cali"
+            className="w-full h-full object-cover filter brightness-[0.45] contrast-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0b0c0e] via-black/40 to-[#0b0c0e]/80" />
+        </div>
 
-        {/* Logo Brand */}
-        <motion.div
-          initial={{ opacity: 0, y: -15 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
-        >
-          <Link to="/" className="inline-block group mb-4">
+        {/* Encabezado Izquierdo */}
+        <div className="relative z-10 flex items-center gap-3.5">
+          <Link to="/" className="w-12 h-12 rounded-md bg-black/80 border border-white/15 p-1 flex items-center justify-center shadow-lg hover:border-[#E15233] transition-colors">
             <img
-              src="/logo.png"
-              alt="Barbería Triadix"
-              className="w-20 h-20 object-contain rounded-none border border-[#1e1e1e] p-2 bg-[#0d0d0d] shadow-md mx-auto group-hover:scale-105 transition-transform"
+              src="/images/punto-fino/logo.png"
+              alt="Punto Fino"
+              className="w-full h-full object-contain"
             />
           </Link>
-          <h1 className="font-sans font-medium uppercase tracking-[0.2em] text-2xl text-white">
-            Triadix
-          </h1>
-          <p className="text-[#888888] mt-1.5 text-xs tracking-[0.25em] uppercase font-sans">
-            Barbería · Cali
+          <div>
+            <h2 className="font-display font-bold text-2xl text-white tracking-wide leading-none">
+              PUNTO FINO
+            </h2>
+            <span className="font-sans text-xs text-[#B89758] font-medium tracking-wide">
+              {BUSINESS_CONFIG.location.neighborhood} · Cali
+            </span>
+          </div>
+        </div>
+
+        {/* Cita Editorial del Oficio */}
+        <div className="relative z-10 space-y-4 max-w-lg">
+          <span className="font-mono text-xs uppercase tracking-widest text-[#E15233] font-bold block">
+            PORTAL DEL EQUIPO
+          </span>
+          <blockquote className="font-display text-2xl lg:text-3xl font-normal text-[#F7F5F0] leading-snug">
+            “El verdadero oficio se nota en el detalle milimétrico, el respeto por el tiempo del cliente y la calidez en cada silla.”
+          </blockquote>
+          <p className="font-sans text-xs text-[#9B988F]">
+            Administración central, agenda diaria de barberos y liquidación de servicios.
           </p>
-        </motion.div>
+        </div>
 
-        <AnimatePresence mode="wait">
+        {/* Footer Izquierdo */}
+        <div className="relative z-10 flex items-center justify-between text-xs text-[#9B988F] font-mono border-t border-white/10 pt-4">
+          <span>{BUSINESS_CONFIG.location.address}</span>
+          <span>© {new Date().getFullYear()} Punto Fino</span>
+        </div>
+      </div>
 
-          {/* PASO 1: Seleccionar rol */}
-          {!selectedRole && (
-            <motion.div
-              key="role-selector"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
+      {/* Columna Derecha: Formulario Unificado Limpio y Accesible */}
+      <div className="flex-1 md:col-span-7 lg:col-span-6 flex flex-col justify-center px-6 sm:px-12 lg:px-20 py-12">
+        <div className="w-full max-w-md mx-auto space-y-8">
+          
+          {/* Enlace de regreso en móvil */}
+          <div className="flex items-center justify-between md:hidden">
+            <Link 
+              to="/" 
+              className="inline-flex items-center gap-1.5 text-xs text-[#9B988F] hover:text-white transition-colors"
             >
-              <div className="text-center mb-6">
-                <h2 className="font-sans font-medium uppercase tracking-[0.16em] text-lg text-white">Portal de Acceso</h2>
-                <p className="text-[#888888] font-sans text-xs mt-1">Acceso exclusivo para el personal de la barbería</p>
-              </div>
+              <ArrowLeft size={14} />
+              <span>Volver a la web</span>
+            </Link>
+            <div className="w-8 h-8 rounded bg-black border border-white/10 p-0.5">
+              <img src="/images/punto-fino/logo.png" alt="Logo" className="w-full h-full object-contain" />
+            </div>
+          </div>
 
-              <div className="space-y-3">
-                {roles.map((role, index) => {
-                  return (
-                    <motion.button
-                      key={role.id}
-                      initial={{ opacity: 0, x: -15 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.08 }}
-                      onClick={() => handleRoleSelect(role.id)}
-                      className="w-full flex items-center gap-4 p-4 rounded-none border border-[#1e1e1e] bg-[#0a0a0a] hover:border-white/40 hover:bg-[#141414] transition-all duration-200 group text-left cursor-pointer"
-                    >
-                      <div className="w-11 h-11 bg-[#141414] border border-[#222222] rounded-none flex items-center justify-center flex-shrink-0 text-xl group-hover:border-white/30 transition-colors">
-                        {role.emoji}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-white font-sans font-medium uppercase tracking-[0.16em] text-xs leading-tight group-hover:text-white transition-colors">
-                          {role.label}
-                        </p>
-                        <p className="text-[#888888] text-xs font-sans mt-1">{role.description}</p>
-                      </div>
-                      <div className="text-[#666666] group-hover:text-white transition-colors">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M9 18l6-6-6-6"/>
-                        </svg>
-                      </div>
-                    </motion.button>
-                  );
-                })}
-              </div>
+          {/* Título y Presentación del Formulario */}
+          <div className="space-y-2">
+            <span className="font-mono text-xs uppercase tracking-widest text-[#B89758] font-semibold">
+              Acceso Exclusivo de Personal
+            </span>
+            <h1 className="font-display text-3xl sm:text-4xl font-bold text-white tracking-tight">
+              Iniciar Sesión
+            </h1>
+            <p className="font-sans text-sm text-[#9B988F] leading-relaxed">
+              Ingresa tus credenciales para acceder a la consola administrativa o a tu agenda de barbero.
+            </p>
+          </div>
 
-              <p className="text-center text-[#888888] mt-8 text-xs font-sans">
-                ¿Deseas agendar un servicio?{' '}
-                <Link to="/#reservar" className="text-white hover:text-[#888888] font-medium transition-colors underline underline-offset-4">
-                  Reservar cita sin cuenta
-                </Link>
-              </p>
-            </motion.div>
-          )}
-
-          {/* PASO 2: Formulario de login según rol */}
-          {selectedRole && (
-            <motion.div
-              key="login-form"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-            >
-              {/* Header del rol seleccionado */}
-              <div className="bg-[#0a0a0a] border border-[#1e1e1e] rounded-none p-4 mb-6 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#141414] border border-[#222222] rounded-none flex items-center justify-center text-lg">
-                    {activeRole.emoji}
-                  </div>
-                  <div>
-                    <span className="px-2 py-0.5 border border-[#222222] bg-[#141414] text-[10px] font-sans font-medium uppercase tracking-[0.16em] text-[#888888] mb-1 inline-block">
-                      {activeRole.label}
-                    </span>
-                    <p className="font-sans font-medium uppercase tracking-[0.16em] text-white text-xs leading-tight mt-0.5">Ingresar al Sistema</p>
-                  </div>
+          {/* Formulario Unificado */}
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+            
+            {/* Campo 1: Correo Electrónico */}
+            <div className="space-y-1.5">
+              <label 
+                htmlFor="login-email" 
+                className="block text-xs font-sans font-medium text-[#cccccc]"
+              >
+                Correo electrónico
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#6A6862]">
+                  <Mail size={16} />
                 </div>
+                <input
+                  id="login-email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="ejemplo@puntofino.co"
+                  aria-invalid={errors.email ? 'true' : 'false'}
+                  aria-describedby={errors.email ? 'email-error' : undefined}
+                  {...register('email')}
+                  className={`w-full bg-[#18191E] border ${
+                    errors.email ? 'border-rose-500' : 'border-white/10 hover:border-white/20'
+                  } text-white text-sm rounded-md pl-10 pr-4 py-3 placeholder-[#6A6862] focus:outline-none focus:border-[#E15233] focus:ring-1 focus:ring-[#E15233] transition-colors`}
+                />
+              </div>
+              {errors.email && (
+                <p id="email-error" role="alert" className="text-xs text-rose-400 mt-1 font-sans">
+                  {errors.email.message}
+                </p>
+              )}
+            </div>
+
+            {/* Campo 2: Contraseña */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label 
+                  htmlFor="login-password" 
+                  className="block text-xs font-sans font-medium text-[#cccccc]"
+                >
+                  Contraseña
+                </label>
+              </div>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#6A6862]">
+                  <Lock size={16} />
+                </div>
+                <input
+                  id="login-password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  aria-invalid={errors.password ? 'true' : 'false'}
+                  aria-describedby={errors.password ? 'password-error' : undefined}
+                  {...register('password')}
+                  className={`w-full bg-[#18191E] border ${
+                    errors.password ? 'border-rose-500' : 'border-white/10 hover:border-white/20'
+                  } text-white text-sm rounded-md pl-10 pr-11 py-3 placeholder-[#6A6862] focus:outline-none focus:border-[#E15233] focus:ring-1 focus:ring-[#E15233] transition-colors`}
+                />
                 <button
                   type="button"
-                  onClick={() => setSelectedRole(null)}
-                  className="text-xs font-sans text-[#888888] hover:text-white transition-colors flex items-center gap-1 cursor-pointer"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#9B988F] hover:text-white transition-colors cursor-pointer"
                 >
-                  <ArrowLeft size={13} /> Cambiar
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+              {errors.password && (
+                <p id="password-error" role="alert" className="text-xs text-rose-400 mt-1 font-sans">
+                  {errors.password.message}
+                </p>
+              )}
+            </div>
 
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <Input
-                  label="Correo Electrónico"
-                  type="email"
-                  placeholder="ejemplo@triadix.co"
-                  icon={Mail}
-                  error={errors.email?.message}
-                  {...register('email')}
-                />
+            {/* Botón de Envío */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-[#E15233] hover:bg-[#C44327] disabled:bg-[#E15233]/60 text-white font-sans font-bold text-sm uppercase tracking-wider py-3.5 px-4 rounded-md transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#E15233] focus:ring-offset-2 focus:ring-offset-[#0b0c0e]"
+            >
+              {loading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Verificando...</span>
+                </>
+              ) : (
+                <>
+                  <span>Ingresar al Sistema</span>
+                  <ArrowRight size={16} />
+                </>
+              )}
+            </button>
+          </form>
 
-                <div>
-                  <label className="label">Contraseña</label>
-                  <div className="relative">
-                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#888888] pointer-events-none z-10">
-                      <Lock size={16} />
-                    </div>
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="Tu contraseña secreta"
-                      className={`input-field pl-10 pr-10 text-xs ${errors.password ? '!border-red-500/70 focus:!border-red-500' : ''}`}
-                      {...register('password')}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#888888] hover:text-white transition-colors z-10 cursor-pointer"
-                    >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                  {errors.password && <p className="mt-1.5 text-xs text-red-400 font-medium">{errors.password.message}</p>}
-                </div>
+          {/* Enlace de Escape Amable para Clientes */}
+          <div className="pt-6 border-t border-white/10 text-center space-y-3">
+            <p className="text-xs text-[#9B988F] font-sans">
+              ¿Eres cliente y quieres agendar un corte?
+            </p>
+            <Link
+              to="/#reservar"
+              className="inline-flex items-center gap-1.5 text-xs text-white hover:text-[#B89758] font-sans font-semibold underline underline-offset-4 transition-colors"
+            >
+              <span>Reserva tu cita aquí sin crear cuenta</span>
+              <ArrowRight size={12} />
+            </Link>
+          </div>
 
-                <div className="flex justify-end">
-                  <Link to="/forgot-password" className="text-xs font-sans text-[#888888] hover:text-white transition-colors">
-                    ¿Olvidaste tu contraseña?
-                  </Link>
-                </div>
+          {/* Garantía de Seguridad */}
+          <div className="flex items-center justify-center gap-2 text-[11px] text-[#6A6862] font-sans pt-2">
+            <ShieldCheck size={14} className="text-[#B89758]" />
+            <span>Acceso seguro protegido con tokens de sesión encriptados.</span>
+          </div>
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full btn-ferrari-primary text-xs uppercase tracking-[0.2em] py-3.5 rounded-none cursor-pointer"
-                >
-                  {loading ? 'Accediendo...' : `Iniciar Sesión (${activeRole.label})`}
-                </button>
-              </form>
-            </motion.div>
-          )}
-
-        </AnimatePresence>
+        </div>
       </div>
+
     </div>
   );
 }

@@ -7,27 +7,27 @@ const seedUsers = async () => {
   try {
     await connectDB();
 
-    // 1. Admin Triadix
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@triadix.co';
-    let admin = await User.findOne({ email: { $in: [adminEmail, 'admin@puntofino.com', 'admin@steelhouse.com'] } });
+    // 1. Admin & Barbero: Juan David
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@puntofino.co';
+    let admin = await User.findOne({ email: { $in: [adminEmail, 'juandavid@puntofino.co'] } });
     if (!admin) {
       admin = await User.create({
-        name: 'Admin Triadix',
+        name: 'Juan David',
         email: adminEmail,
-        phone: '3001112233',
+        phone: '3122398964',
         password: 'admin123456',
         role: 'admin',
         isVerified: true,
       });
-      console.log(`✅ Admin creado: ${adminEmail} / admin123456`);
+      console.log(`✅ Admin Juan David creado: ${adminEmail} / admin123456`);
     }
 
-    // 2. Barbero 1 (Andrés Felipe Sarria)
-    const barber1Email = 'andres@triadix.co';
-    let barberUser1 = await User.findOne({ email: { $in: [barber1Email, 'juan.david@puntofino.com', 'juan@puntofino.com'] } });
+    // 2. Barbero 1: Juan David
+    const barber1Email = 'juandavid@puntofino.co';
+    let barberUser1 = await User.findOne({ email: barber1Email });
     if (!barberUser1) {
       barberUser1 = await User.create({
-        name: 'Andrés Felipe Sarria',
+        name: 'Juan David',
         email: barber1Email,
         phone: '3122398964',
         password: 'barbero123',
@@ -36,20 +36,20 @@ const seedUsers = async () => {
       });
       await Barber.create({
         user: barberUser1._id,
-        bio: 'Cofundador de Triadix. Especialista en cortes modernos, degradados limpios a navaja y asesoría de estilo.',
+        bio: 'Barbero y Administrador de Punto Fino. Especialista en la Experiencia Punto Fino y degradados pulidos.',
         specialties: ['degradado', 'corte clásico'],
-        rating: { average: 4.9, count: 24 },
+        rating: { average: 5.0, count: 42 },
         isAvailable: true,
       });
-      console.log('✅ Barbero Andrés Felipe Sarria creado: andres@triadix.co / barbero123');
+      console.log('✅ Barbero Juan David creado: juandavid@puntofino.co / barbero123');
     }
 
-    // 3. Barbero 2 (Nicolás Chávez)
-    const barber2Email = 'nicolas@triadix.co';
-    let barberUser2 = await User.findOne({ email: { $in: [barber2Email, 'juan.diego@puntofino.com', 'carlos@puntofino.com'] } });
+    // 3. Barbero 2: Emanuel Torres
+    const barber2Email = 'emanuel@puntofino.co';
+    let barberUser2 = await User.findOne({ email: barber2Email });
     if (!barberUser2) {
       barberUser2 = await User.create({
-        name: 'Nicolás Chávez',
+        name: 'Emanuel Torres',
         email: barber2Email,
         phone: '3122398964',
         password: 'barbero123',
@@ -58,20 +58,20 @@ const seedUsers = async () => {
       });
       await Barber.create({
         user: barberUser2._id,
-        bio: 'Cofundador de Triadix. Experto en afeitado tradicional a navaja, perfilado de barba con toalla caliente y aceites hidratantes.',
+        bio: 'Barbero profesional de Punto Fino. Especialista en ritual de barba tradicional y cortes modernos.',
         specialties: ['barba', 'corte clásico'],
-        rating: { average: 5.0, count: 28 },
+        rating: { average: 4.9, count: 38 },
         isAvailable: true,
       });
-      console.log('✅ Barbero Nicolás Chávez creado: nicolas@triadix.co / barbero123');
+      console.log('✅ Barbero Emanuel Torres creado: emanuel@puntofino.co / barbero123');
     }
 
-    // 4. Barbero 3 (Luis De Ávila)
-    const barber3Email = 'luis@triadix.co';
-    let barberUser3 = await User.findOne({ email: { $in: [barber3Email, 'emanuel@puntofino.com'] } });
+    // 4. Barbero 3: Juan Diego
+    const barber3Email = 'juandiego@puntofino.co';
+    let barberUser3 = await User.findOne({ email: barber3Email });
     if (!barberUser3) {
       barberUser3 = await User.create({
-        name: 'Luis De Ávila',
+        name: 'Juan Diego',
         email: barber3Email,
         phone: '3122398964',
         password: 'barbero123',
@@ -80,31 +80,31 @@ const seedUsers = async () => {
       });
       await Barber.create({
         user: barberUser3._id,
-        bio: 'Cofundador de Triadix. Maestro de la textura y el degradado limpio, perfilado geométrico de cejas y vanguardia estética masculina.',
+        bio: 'Barbero profesional de Punto Fino. Especialista en corte a tijera y perfilado de cejas.',
         specialties: ['degradado', 'cejas'],
-        rating: { average: 4.9, count: 19 },
+        rating: { average: 5.0, count: 45 },
         isAvailable: true,
       });
-      console.log('✅ Barbero Luis De Ávila creado: luis@triadix.co / barbero123');
+      console.log('✅ Barbero Juan Diego creado: juandiego@puntofino.co / barbero123');
     }
 
-    // 5. Cliente Triadix
-    const clientEmail = 'cliente@triadix.co';
-    let client = await User.findOne({ email: { $in: [clientEmail, 'cliente@puntofino.com', 'cliente@steelhouse.com'] } });
+    // 5. Cliente Punto Fino
+    const clientEmail = 'cliente@puntofino.co';
+    let client = await User.findOne({ email: clientEmail });
     if (!client) {
       client = await User.create({
-        name: 'Cliente Triadix',
+        name: 'Carlos Alberto Gómez',
         email: clientEmail,
-        phone: '3007654321',
+        phone: '3157894210',
         password: 'cliente123',
         role: 'cliente',
         isVerified: true,
         loyaltyPoints: 100,
       });
-      console.log('✅ Cliente creado: cliente@triadix.co / cliente123');
+      console.log('✅ Cliente creado: cliente@puntofino.co / cliente123');
     }
 
-    console.log('🎉 Seed de usuarios de Triadix finalizado con éxito.');
+    console.log('🎉 Seed de usuarios de Punto Fino finalizado con éxito.');
     process.exit(0);
   } catch (error) {
     console.error('❌ Error en seedUsers:', error.message);

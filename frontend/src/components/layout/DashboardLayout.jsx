@@ -278,7 +278,7 @@ export default function DashboardLayout() {
 
                     {/* Footer */}
                     <div className="px-4 py-2 border-t border-[#2b292d] bg-[#1a191b]/60 flex items-center justify-between text-[10px] text-[#7c7a85] font-mono">
-                      <span>CONSOLA TRIADIX</span>
+                      <span>CONSOLA PUNTO FINO</span>
                       <span className="text-[#71d083]">● EN VIVO</span>
                     </div>
                   </motion.div>

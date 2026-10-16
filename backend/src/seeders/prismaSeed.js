@@ -14,7 +14,6 @@ async function main() {
   await prisma.cashSession.deleteMany({});
   await prisma.appointmentItem.deleteMany({});
   await prisma.appointment.deleteMany({});
-  await prisma.barberService.deleteMany({});
   await prisma.barberAbsence.deleteMany({});
   await prisma.barberSchedule.deleteMany({});
   await prisma.barberProfile.deleteMany({});
@@ -40,7 +39,7 @@ async function main() {
     },
   });
 
-  // 2. Crear los 3 Barberos Reales de Punto Fino
+  // 2. Crear los 3 Barberos Reales de Punto Fino (Sin fotos de perfil)
   // Juan David: Barbero y Admin
   console.log('✂️ Creando equipo de 3 barberos de Punto Fino...');
   const juanDavidUser = await prisma.user.create({
@@ -54,8 +53,7 @@ async function main() {
       barberProfile: {
         create: {
           nickname: 'Juan David "El Fino"',
-          bio: 'Fundador de Punto Fino, barbero y administrador. Especialista en degradados milimétricos, cerquillo recto y afeitado tradicional a navaja.',
-          avatarUrl: '/images/punto-fino/ritual-vapor-real.png',
+          bio: 'Fundador de Punto Fino, barbero y administrador. Especialista en corte clásico, degradados de precisión y gestión integral.',
           commissionRate: 0.50,
           sortOrder: 1,
         },
@@ -76,8 +74,7 @@ async function main() {
       barberProfile: {
         create: {
           nickname: 'Emanuel Torres "El Primo"',
-          bio: 'Especialista en cortes en tendencia, mullet moderno, taper fade y texturizado a tijera.',
-          avatarUrl: '/images/punto-fino/corte-fade-real.png',
+          bio: 'Barbero profesional con maestría en corte, ritual de barba con toalla caliente y vapor de ozono.',
           commissionRate: 0.50,
           sortOrder: 2,
         },
@@ -98,8 +95,7 @@ async function main() {
       barberProfile: {
         create: {
           nickname: 'Juan Diego "Junior"',
-          bio: 'Maestro en arreglo de barba con toalla caliente, vapor de ozono, exfoliación y tratamientos capilares.',
-          avatarUrl: '/images/punto-fino/ritual-vapor-real.png',
+          bio: 'Barbero máster con amplia trayectoria en cortes a tijera, perfilado milimétrico y asesoría de estilo.',
           commissionRate: 0.50,
           sortOrder: 3,
         },
@@ -131,7 +127,7 @@ async function main() {
           barberId: b.id,
           dayOfWeek: day,
           startTime: day === 0 ? '09:00' : '09:00', // Domingo 09:00 AM
-          endTime: day === 0 ? '15:00' : '20:00',   // Domingo cierra 03:00 PM, Mar-Sáb 08:00 PM
+          endTime: day === 0 ? '16:00' : '20:30',   // Domingo cierra 04:00 PM, Mar-Sáb 08:30 PM
           isWorking: day !== 1, // Lunes descanso
         },
       });
@@ -139,6 +135,7 @@ async function main() {
   }
 
   // 4. Crear Catálogo Oficial de Servicios de Punto Fino
+  // Todos los barberos ofrecen todos los servicios sin distinción ni especialidades
   console.log('📋 Creando catálogo oficial de servicios en COP...');
   const s1 = await prisma.service.create({
     data: {
@@ -200,28 +197,18 @@ async function main() {
     },
   });
 
-  const allServices = [s1, s2, s3, s4, s5];
-
-  // Asociar todos los servicios a cada barbero
-  for (const b of barbers) {
-    for (const s of allServices) {
-      await prisma.barberService.create({
-        data: {
-          barberId: b.id,
-          serviceId: s.id,
-        },
-      });
-    }
-  }
-
-  // 5. Crear Productos de Barbería
-  console.log('🧴 Creando inventario de productos...');
+  // 5. Crear Productos Oficiales de Barbería
+  console.log('🧴 Creando inventario de productos oficiales...');
   await prisma.product.createMany({
     data: [
-      { name: 'Pomada Fijación Fuerte Mate', brand: 'Bandido Colombia', priceCOP: 35000, costCOP: 20000, stock: 14, minStock: 5 },
-      { name: 'Aceite Hidratante para Barba 30ml', brand: 'Punto Fino Lab', priceCOP: 28000, costCOP: 14000, stock: 8, minStock: 4 },
-      { name: 'Cuchillas Derby Premium (Caja x100)', brand: 'Derby Extra', priceCOP: 45000, costCOP: 30000, stock: 12, minStock: 20 },
-      { name: 'Shampoo Mentolado Anticaspa 250ml', brand: 'Barber Lab', priceCOP: 32000, costCOP: 18000, stock: 6, minStock: 3 },
+      { name: 'Rolda Gel Black', brand: 'Rolda', priceCOP: 25000, costCOP: 15000, stock: 16, minStock: 5 },
+      { name: 'Rolda Curl Crem', brand: 'Rolda', priceCOP: 36000, costCOP: 22000, stock: 12, minStock: 4 },
+      { name: 'Rolda Spiderwax', brand: 'Rolda', priceCOP: 34000, costCOP: 20000, stock: 14, minStock: 4 },
+      { name: 'Rolda Aqua Wax', brand: 'Rolda', priceCOP: 34000, costCOP: 20000, stock: 18, minStock: 4 },
+      { name: 'Rolda Gel Wax', brand: 'Rolda', priceCOP: 34000, costCOP: 20000, stock: 15, minStock: 4 },
+      { name: 'Jugo Hit', brand: 'Postobón', priceCOP: 5000, costCOP: 2500, stock: 24, minStock: 8 },
+      { name: 'Cerveza Águila Latón', brand: 'Bavaria', priceCOP: 6000, costCOP: 3200, stock: 20, minStock: 6 },
+      { name: 'Agua', brand: 'Cristal', priceCOP: 3000, costCOP: 1200, stock: 30, minStock: 10 },
     ],
   });
 
@@ -261,7 +248,7 @@ async function main() {
     data: {
       openedByUserId: adminUser.id,
       openingBalance: 100000,
-      notes: 'Apertura de turno matutino Punto Fino Tequendama',
+      notes: 'Apertura de turno matutino Punto Fino Villacolombia',
     },
   });
 

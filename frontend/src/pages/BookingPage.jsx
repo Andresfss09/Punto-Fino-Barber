@@ -31,7 +31,7 @@ export default function BookingPage() {
         <div className="max-w-4xl mx-auto">
           <div className="mb-8 text-center">
             <span className="text-[11px] font-mono tracking-widest text-pf-terracota font-bold uppercase inline-block mb-2">
-              PUNTO FINO · SANTIAGO DE CALI · TEQUENDAMA
+              PUNTO FINO · VILLACOLOMBIA · SANTIAGO DE CALI
             </span>
             <h1 className="font-display font-bold text-3xl sm:text-4xl text-pf-bone mb-2">
               Reservá tu Turno en la Silla

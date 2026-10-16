@@ -121,7 +121,7 @@ export default function AdminBarbers() {
               Gestión de <span className="text-[#71d083]">Barberos</span>
             </h1>
             <p className="text-[#7c7a85] text-xs font-sans mt-1">
-              {barbers.length} barberos profesionales registrados y operativos en Triadix.
+              {barbers.length} barberos profesionales registrados y operativos en Punto Fino.
             </p>
           </div>
           <button
@@ -321,7 +321,7 @@ export default function AdminBarbers() {
                 <div className="relative">
                   <input
                     type="email"
-                    placeholder="barbero@triadix.co"
+                    placeholder="barbero@puntofino.co"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value.trim() })}
                     onBlur={() => setTouched(prev => ({ ...prev, email: true }))}
@@ -341,7 +341,7 @@ export default function AdminBarbers() {
                 {touched.email && !isEmailValid && (
                   <p className="text-rose-400 text-[11px] mt-1 flex items-center gap-1">
                     <AlertCircle size={12} />
-                    Formato de correo no válido (ej: barbero@triadix.co).
+                    Formato de correo no válido (ej: barbero@puntofino.co).
                   </p>
                 )}
               </div>

@@ -2,14 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, ArrowRight, Calendar, Sparkles, CheckCircle2 } from 'lucide-react';
 import AnimatedCounter from '../ui/AnimatedCounter';
+import { BUSINESS_CONFIG } from '../../config/businessConfig';
 
 const SLIDES = [
   {
     id: 1,
-    eyebrow: 'BARBERÍA DE BARRIO · SANTIAGO DE CALI',
+    eyebrow: 'VILLACOLOMBIA · SANTIAGO DE CALI',
     titleLine1: 'EXPERIENCIA',
     titleLine2: 'PUNTO FINO',
-    desc: 'Corte de precisión a navaja y perfilado limpio de cejas ($ 24.000 COP). Oficio de barrio con Juan David, Emanuel Torres y Juan Diego.',
+    desc: 'Corte de precisión a navaja y perfilado limpio de cejas ($ 24.000 COP). Oficio de tradición con Juan David, Emanuel Torres y Juan Diego.',
     buttonText: 'RESERVAR TU SILLA',
     image: '/images/punto-fino/corte-fade-real.png',
   },
@@ -20,7 +21,7 @@ const SLIDES = [
     titleLine2: 'TOALLA CALIENTE',
     desc: 'Perfilado al milímetro a navaja, hidratación con aceites botánicos y relajación facial profunda en el corazón de Cali ($ 12.000 COP).',
     buttonText: 'RESERVAR BARBA',
-    image: '/images/punto-fino/ritual-vapor-real.png',
+    image: '/images/punto-fino/ritual-vapor-facial.png',
   },
   {
     id: 3,
@@ -29,7 +30,7 @@ const SLIDES = [
     titleLine2: 'CORTE, BARBA & FACIAL',
     desc: 'La experiencia definitiva: corte personalizado, cejas, ritual completo de barba con vapor de ozono y toalla caliente por $ 55.000 COP.',
     buttonText: 'RESERVAR PLATINIUM',
-    image: '/images/punto-fino/ritual-vapor-real.png',
+    image: '/images/punto-fino/masaje-vapor-ozono.png',
   },
 ];
 
@@ -56,10 +57,11 @@ export default function HeroSection() {
   const active = SLIDES[currentSlide];
 
   return (
-    <div className="w-full bg-[#000000] text-white pt-[116px]">
-      {/* Cinematic Hero Viewport — Full-Screen Feel */}
-      <div className="relative w-full min-h-[660px] sm:min-h-[720px] lg:min-h-[calc(100vh-116px)] xl:min-h-[820px] flex flex-col justify-center overflow-hidden bg-black select-none border-b border-[#1e1e1e]">
-        {/* Background Slide Image */}
+    <div className="w-full bg-[#0b0c0e] text-white pt-[112px]">
+      {/* Cinematic Hero Viewport */}
+      <div className="relative w-full min-h-[660px] sm:min-h-[720px] lg:min-h-[calc(100vh-112px)] xl:min-h-[820px] flex flex-col justify-center overflow-hidden bg-black select-none border-b border-white/10">
+        
+        {/* Slide de Fondo */}
         <AnimatePresence mode="wait">
           <motion.div
             key={active.id}
@@ -72,19 +74,19 @@ export default function HeroSection() {
             <img
               src={active.image}
               alt={active.titleLine1}
-              className="w-full h-full object-cover object-center filter brightness-[0.80] contrast-[1.05]"
+              className="w-full h-full object-cover object-center filter brightness-[0.72] contrast-[1.05]"
             />
-            {/* Soft Ambient Overlay to ensure text readability without hiding the barbershop atmosphere */}
+            {/* Degradados sutiles para legibilidad */}
             <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-black/30" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0b0c0e] via-transparent to-black/40" />
           </motion.div>
         </AnimatePresence>
 
-        {/* Content Container (2 Columns on Desktop) */}
+        {/* Contenido en 2 Columnas */}
         <div className="relative z-10 max-w-[1600px] w-full mx-auto h-full px-6 sm:px-10 lg:px-16 xl:px-20 py-12 lg:py-20 flex items-center flex-1">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center w-full">
             
-            {/* Left Column: Headlines & CTA */}
+            {/* Columna Izquierda: Títulos Editoriales & CTA */}
             <div className="lg:col-span-7 xl:col-span-7">
               <AnimatePresence mode="wait">
                 <motion.div
@@ -95,16 +97,16 @@ export default function HeroSection() {
                   transition={{ duration: 0.4 }}
                 >
                   <div className="flex items-center gap-2.5 mb-4">
-                    <span className="w-2.5 h-2.5 bg-[#cfa53b]"></span>
-                    <span className="font-sans text-xs sm:text-sm font-semibold uppercase tracking-[0.25em] text-[#cfa53b]">
+                    <span className="w-2.5 h-2.5 bg-[#E15233]"></span>
+                    <span className="font-mono text-xs sm:text-sm font-semibold uppercase tracking-[0.22em] text-[#B89758]">
                       {active.eyebrow}
                     </span>
                   </div>
 
-                  <h1 className="font-sans uppercase text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-black tracking-normal sm:tracking-[0.02em] text-white leading-[1.04] mb-6">
+                  <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-bold tracking-tight text-white leading-[1.02] mb-6">
                     <span>{active.titleLine1}</span>
                     <br />
-                    <span className="text-[#cfa53b]">{active.titleLine2}</span>
+                    <span className="text-[#B89758]">{active.titleLine2}</span>
                   </h1>
 
                   <p className="font-sans text-base sm:text-lg lg:text-xl text-[#d4d4d4] max-w-2xl mb-8 sm:mb-10 leading-relaxed font-normal">
@@ -119,7 +121,7 @@ export default function HeroSection() {
                         const el = document.getElementById('reservar');
                         if (el) el.scrollIntoView({ behavior: 'smooth' });
                       }}
-                      className="btn-ferrari-primary !py-4 !px-8 sm:!px-10 text-sm sm:text-base font-bold flex items-center gap-3 shadow-2xl"
+                      className="bg-[#E15233] hover:bg-[#C44327] text-white font-sans font-bold text-sm sm:text-base uppercase tracking-wider py-4 px-8 sm:px-10 rounded-md transition-all flex items-center gap-3 shadow-2xl active:scale-95 cursor-pointer"
                     >
                       <Calendar size={18} />
                       <span>{active.buttonText}</span>
@@ -133,7 +135,7 @@ export default function HeroSection() {
                         const el = document.getElementById('servicios');
                         if (el) el.scrollIntoView({ behavior: 'smooth' });
                       }}
-                      className="btn-ferrari-outline !py-4 !px-7 sm:!px-8 text-sm sm:text-base font-bold text-center"
+                      className="bg-[#18191E]/80 hover:bg-[#18191E] border border-white/20 hover:border-white text-white font-sans font-bold text-sm sm:text-base uppercase tracking-wider py-4 px-7 sm:px-8 rounded-md transition-all text-center backdrop-blur-sm cursor-pointer"
                     >
                       Ver Precios y Cortes
                     </a>
@@ -142,43 +144,43 @@ export default function HeroSection() {
               </AnimatePresence>
             </div>
 
-            {/* Right Column: Floating Quick Info Card with the Razor Logo */}
+            {/* Columna Derecha: Tarjeta de Acceso Rápido */}
             <div className="hidden lg:flex lg:col-span-5 xl:col-span-5 justify-end">
-              <div className="w-full max-w-md bg-[#0a0a0a]/95 backdrop-blur-md border border-[#2e2e2e] p-8 sm:p-9 shadow-2xl relative">
-                {/* Top Badge */}
-                <div className="flex items-center justify-between border-b border-[#1e1e1e] pb-5 mb-6">
+              <div className="w-full max-w-md bg-[#111215]/95 backdrop-blur-md border border-white/10 p-8 sm:p-9 shadow-2xl rounded-md relative">
+                {/* Header de la Tarjeta */}
+                <div className="flex items-center justify-between border-b border-white/10 pb-5 mb-6">
                   <div className="flex items-center gap-3.5">
                     <img 
                       src="/images/punto-fino/logo.png" 
-                      alt="Punto Fino Barbería" 
-                      className="w-14 h-14 object-contain p-1 bg-black border border-[#333333] shadow-md" 
+                      alt="Punto Fino" 
+                      className="w-12 h-12 object-contain p-1 bg-black border border-white/10 rounded shadow-md" 
                     />
                     <div>
-                      <h3 className="font-sans uppercase font-bold text-base sm:text-lg tracking-[0.2em] text-white leading-tight">
+                      <h3 className="font-display font-bold text-xl text-white leading-tight">
                         Punto Fino
                       </h3>
-                      <span className="text-xs text-[#B89758] uppercase tracking-[0.18em] font-mono mt-0.5 block">
-                        Barbería de Barrio · Cali
+                      <span className="text-xs text-[#B89758] font-sans mt-0.5 block">
+                        Villacolombia · Cali
                       </span>
                     </div>
                   </div>
-                  <span className="px-3 py-1 text-xs font-mono uppercase bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold">
+                  <span className="px-2.5 py-1 text-xs font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded font-semibold">
                     Abierto Hoy
                   </span>
                 </div>
 
-                <div className="space-y-4 text-sm sm:text-[15px] font-sans mb-8">
+                <div className="space-y-4 text-sm font-sans mb-8">
                   <div className="flex items-start gap-3 text-[#dcdcdc]">
                     <CheckCircle2 size={18} className="text-[#B89758] shrink-0 mt-0.5" />
-                    <span><strong>3 Barberos disponibles:</strong> Juan David (Admin), Emanuel y Juan Diego</span>
+                    <span><strong>3 Barberos oficiales:</strong> Juan David (Admin), Emanuel y Juan Diego</span>
                   </div>
                   <div className="flex items-start gap-3 text-[#dcdcdc]">
                     <CheckCircle2 size={18} className="text-[#B89758] shrink-0 mt-0.5" />
-                    <span><strong>Atención puntual:</strong> Reserva online y olvídate de hacer fila</span>
+                    <span><strong>Atención puntual:</strong> Reserva online sin hacer fila en el local</span>
                   </div>
                   <div className="flex items-start gap-3 text-[#dcdcdc]">
                     <CheckCircle2 size={18} className="text-[#B89758] shrink-0 mt-0.5" />
-                    <span><strong>Bebida de cortesía:</strong> Café, agua o jugo mientras te atendemos</span>
+                    <span><strong>Bebida de cortesía:</strong> Café recién colado, agua o jugo frío</span>
                   </div>
                 </div>
 
@@ -189,7 +191,7 @@ export default function HeroSection() {
                     const el = document.getElementById('reservar');
                     if (el) el.scrollIntoView({ behavior: 'smooth' });
                   }}
-                  className="w-full btn-ferrari-primary text-sm !py-4 flex items-center justify-center gap-2.5 font-bold shadow-lg"
+                  className="w-full bg-white hover:bg-[#EFECE4] text-black font-sans font-bold text-sm uppercase tracking-wider py-3.5 px-4 rounded-md flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer"
                 >
                   <Calendar size={16} />
                   <span>Agendar Mi Cita Ahora</span>
@@ -200,7 +202,7 @@ export default function HeroSection() {
           </div>
         </div>
 
-        {/* Carousel Indicators */}
+        {/* Indicadores del Carrusel */}
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2.5">
           {SLIDES.map((s, idx) => {
             const isActive = currentSlide === idx;
@@ -208,8 +210,8 @@ export default function HeroSection() {
               <button
                 key={s.id}
                 onClick={() => setCurrentSlide(idx)}
-                className={`h-2 transition-all cursor-pointer ${
-                  isActive ? 'w-10 bg-[#cfa53b]' : 'w-3 bg-white/40 hover:bg-white/70'
+                className={`h-2 transition-all cursor-pointer rounded-full ${
+                  isActive ? 'w-10 bg-[#E15233]' : 'w-3 bg-white/40 hover:bg-white/70'
                 }`}
                 aria-label={`Slide ${idx + 1}`}
               />
@@ -217,11 +219,11 @@ export default function HeroSection() {
           })}
         </div>
 
-        {/* Nav Arrows */}
+        {/* Flechas de Navegación */}
         <button
           onClick={prevSlide}
           aria-label="Corte anterior"
-          className="absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 z-20 w-12 h-12 border border-white/25 hover:border-white text-white flex items-center justify-center transition-all bg-black/60 hover:bg-black/90 cursor-pointer backdrop-blur-sm shadow-lg"
+          className="absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-md border border-white/20 hover:border-white text-white flex items-center justify-center transition-all bg-black/60 hover:bg-black/90 cursor-pointer backdrop-blur-sm shadow-lg"
         >
           <ChevronLeft size={22} />
         </button>
@@ -229,57 +231,57 @@ export default function HeroSection() {
         <button
           onClick={nextSlide}
           aria-label="Siguiente corte"
-          className="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 z-20 w-12 h-12 border border-white/25 hover:border-white text-white flex items-center justify-center transition-all bg-black/60 hover:bg-black/90 cursor-pointer backdrop-blur-sm shadow-lg"
+          className="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-md border border-white/20 hover:border-white text-white flex items-center justify-center transition-all bg-black/60 hover:bg-black/90 cursor-pointer backdrop-blur-sm shadow-lg"
         >
           <ChevronRight size={22} />
         </button>
       </div>
 
-      {/* Stats Band — Expansive and Punchy */}
-      <section className="bg-[#0a0a0a] border-b border-[#1e1e1e] py-8 sm:py-12">
-        <div className="max-w-[1600px] mx-auto px-6 sm:px-12 lg:px-16 grid grid-cols-3 gap-6 text-center divide-x divide-[#1e1e1e]">
+      {/* Franja de Estadísticas */}
+      <section className="bg-[#111215] border-b border-white/10 py-8 sm:py-12">
+        <div className="max-w-[1600px] mx-auto px-6 sm:px-12 lg:px-16 grid grid-cols-3 gap-6 text-center divide-x divide-white/10">
           <div>
-            <div className="font-mono text-4xl sm:text-5xl lg:text-6xl text-white font-black tracking-tight">
-              <AnimatedCounter value={7} />+
+            <div className="font-mono text-3xl sm:text-5xl lg:text-6xl text-white font-bold tracking-tight">
+              <AnimatedCounter value={8} />+
             </div>
-            <div className="font-sans text-xs sm:text-sm uppercase tracking-[0.22em] text-[#aaaaaa] font-medium mt-2">
+            <div className="font-sans text-xs sm:text-sm uppercase tracking-wider text-[#9B988F] font-medium mt-2">
               Años de Experiencia
             </div>
           </div>
           <div>
-            <div className="font-mono text-4xl sm:text-5xl lg:text-6xl text-white font-black tracking-tight">
+            <div className="font-mono text-3xl sm:text-5xl lg:text-6xl text-white font-bold tracking-tight">
               <AnimatedCounter value={2500} />+
             </div>
-            <div className="font-sans text-xs sm:text-sm uppercase tracking-[0.22em] text-[#aaaaaa] font-medium mt-2">
+            <div className="font-sans text-xs sm:text-sm uppercase tracking-wider text-[#9B988F] font-medium mt-2">
               Clientes Atendidos
             </div>
           </div>
           <div>
-            <div className="font-mono text-4xl sm:text-5xl lg:text-6xl text-white font-black tracking-tight">
-              <AnimatedCounter value={4.9} />
+            <div className="font-mono text-3xl sm:text-5xl lg:text-6xl text-[#B89758] font-bold tracking-tight">
+              <AnimatedCounter value={5.0} />
             </div>
-            <div className="font-sans text-xs sm:text-sm uppercase tracking-[0.22em] text-[#aaaaaa] font-medium mt-2">
+            <div className="font-sans text-xs sm:text-sm uppercase tracking-wider text-[#9B988F] font-medium mt-2">
               Calificación en Cali
             </div>
           </div>
         </div>
       </section>
 
-      {/* Barbershop Promise */}
-      <section className="border-b border-[#1e1e1e] bg-[#000000] py-20 sm:py-24">
+      {/* Promesa del Oficio de Punto Fino */}
+      <section className="border-b border-white/10 bg-[#0b0c0e] py-16 sm:py-24">
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <span className="font-sans text-xs uppercase tracking-[0.28em] text-[#cfa53b] block mb-5 font-semibold">
-            LA EXPERIENCIA EN TRIADIX
+          <span className="font-mono text-xs uppercase tracking-widest text-[#B89758] block mb-5 font-bold">
+            LA EXPERIENCIA EN PUNTO FINO
           </span>
-          <blockquote className="font-sans uppercase text-lg sm:text-2xl lg:text-3xl text-white font-medium tracking-[0.08em] leading-relaxed">
-            “En Triadix nos enfocamos en que te sientas como en casa, disfrutes de un buen ambiente y salgas con el corte exacto que pediste. Atención puntual, buena música y la mejor vibra de Cali.”
+          <blockquote className="font-display text-xl sm:text-2xl lg:text-3xl text-white font-normal leading-relaxed">
+            “En Punto Fino nos enfocamos en que te sientas con confianza, disfrutes de un buen ambiente y salgas con el corte exacto que pediste. Atención puntual, buena música y la mejor vibra de Cali.”
           </blockquote>
           <div className="mt-8 flex items-center justify-center gap-4">
-            <span className="w-12 h-px bg-[#333333]"></span>
-            <span className="font-sans text-xs sm:text-sm uppercase tracking-[0.2em] text-[#888888] font-medium">
-              Andrés Felipe Sarria · Nicolás Chávez · Luis De Ávila
+            <span className="w-12 h-px bg-white/20"></span>
+            <span className="font-sans text-xs sm:text-sm uppercase tracking-wider text-[#9B988F] font-medium">
+              Juan David · Emanuel Torres · Juan Diego
             </span>
-            <span className="w-12 h-px bg-[#333333]"></span>
+            <span className="w-12 h-px bg-white/20"></span>
           </div>
         </div>
       </section>

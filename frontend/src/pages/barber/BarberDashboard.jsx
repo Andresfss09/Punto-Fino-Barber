@@ -272,7 +272,7 @@ export default function BarberDashboard() {
               <span className="text-[11px] font-mono uppercase tracking-[0.025em] text-[#71d083] flex items-center gap-1">
                 <Scissors size={12} /> CONSOLA DEL MAESTRO BARBERO
               </span>
-              <span className="text-[10px] text-[#7c7a85] font-mono uppercase">· Triadix Terminal</span>
+              <span className="text-[10px] text-[#7c7a85] font-mono uppercase">· Punto Fino Terminal</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-sans font-semibold tracking-[-0.025em] text-[#e5e5e5]">
               ¡Hola, <span className="text-[#71d083]">{user?.name ? user.name.split(' ')[0] : 'Barbero'}</span>!

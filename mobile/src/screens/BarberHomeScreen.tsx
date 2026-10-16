@@ -93,10 +93,10 @@ export const BarberHomeScreen: React.FC = () => {
           </View>
           <View>
             <View style={styles.nameRow}>
-              <Text style={styles.barberName}>Brayan Murillo</Text>
-              <Text style={styles.nickname}>"El Fino"</Text>
+              <Text style={styles.barberName}>Juan David</Text>
+              <Text style={styles.nickname}>"Admin & Barbero"</Text>
             </View>
-            <Text style={styles.chairLabel}>Silla #1 · Santiago de Cali (Tequendama)</Text>
+            <Text style={styles.chairLabel}>Silla #1 · Santiago de Cali (Villacolombia)</Text>
           </View>
         </View>
 
@@ -198,7 +198,7 @@ export const BarberHomeScreen: React.FC = () => {
         <View style={styles.timelineSection}>
           <View style={styles.timelineHeader}>
             <Text style={styles.timelineTitle}>AGENDA DE HOY ({upcomingAppointments.length} PENDIENTES)</Text>
-            <Text style={styles.timelineDate}>Cali · Tequendama</Text>
+            <Text style={styles.timelineDate}>Cali · Villacolombia</Text>
           </View>
 
           {upcomingAppointments.length === 0 ? (

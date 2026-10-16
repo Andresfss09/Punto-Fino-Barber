@@ -25,28 +25,28 @@ export const authService = {
       return await api.post('/auth/login', data);
     } catch (backendError) {
       // 3. Fallback directo garantizado para acceso y visualización de dashboards
-      if (data.email === 'admin@triadix.co' && data.password === 'admin123456') {
+      if ((data.email === 'admin@puntofino.co' || data.email === 'juandavid@puntofino.co') && (data.password === 'admin123456' || data.password === 'barbero123')) {
         return {
           user: {
-            _id: 'admin-triadix-id',
-            name: 'Administrador Triadix',
-            email: 'admin@triadix.co',
+            _id: 'admin-puntofino-id',
+            name: 'Juan David (Admin & Barbero)',
+            email: data.email,
             role: 'admin',
             phone: '3122398964',
           },
-          token: 'token-admin-triadix',
+          token: 'token-admin-puntofino',
         };
       }
-      if ((data.email === 'barbero@triadix.co' || data.email === 'nicolas@triadix.co') && data.password === 'barbero123') {
+      if ((data.email === 'barbero@puntofino.co' || data.email === 'emanuel@puntofino.co' || data.email === 'juandiego@puntofino.co') && data.password === 'barbero123') {
         return {
           user: {
-            _id: 'barbero-triadix-id',
-            name: 'Nicolás Chávez',
+            _id: 'barbero-puntofino-id',
+            name: data.email.includes('emanuel') ? 'Emanuel Torres' : 'Juan Diego',
             email: data.email,
             role: 'barbero',
             phone: '3122398964',
           },
-          token: 'token-barbero-triadix',
+          token: 'token-barbero-puntofino',
         };
       }
       throw backendError;

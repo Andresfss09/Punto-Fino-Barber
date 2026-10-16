@@ -38,7 +38,7 @@ export default function DesignSystemView() {
           Sistema de Diseño <span className="text-pf-terracota">Punto Fino</span>
         </h1>
         <p className="mt-3 text-pf-muted max-w-3xl text-base leading-relaxed">
-          Diseñado para una barbería de barrio en Santiago de Cali, Colombia. Transmite oficio, precisión milimétrica y cercanía de vecino, sin recurrir a clichés de plantilla, negro-dorado vintage ni estética corporativa fría.
+          Diseñado para Punto Fino en Villacolombia · Santiago de Cali, Colombia. Transmite oficio, precisión milimétrica y cercanía, sin recurrir a clichés de plantilla, negro-dorado vintage ni estética corporativa fría.
         </p>
       </div>
 

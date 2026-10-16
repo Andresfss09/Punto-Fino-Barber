@@ -73,40 +73,37 @@ export default function PublicBookingView() {
       id: 'any',
       name: 'El primero disponible',
       nickname: 'Asignación inteligente',
+      monogram: 'PF',
       specialty: 'Cualquier barbero del equipo según tu hora preferida',
       rating: '5.0',
       cutsCount: '1.2k',
-      image: '/images/punto-fino/corte-fade-real.png'
     },
     {
       id: 'juan-david',
       name: 'Juan David',
       nickname: 'Barbero & Administrador',
       monogram: 'Jd',
-      specialty: 'Especialista en Experiencia Punto Fino, visagismo masculino y degradados pulidos',
-      rating: '4.9',
+      specialty: 'Atiende todos los servicios oficiales con el mismo estándar de calidad',
+      rating: '5.0',
       cutsCount: '650+',
-      image: '/images/punto-fino/equipo-barberos-real.png'
     },
     {
       id: 'emanuel-torres',
       name: 'Emanuel Torres',
       nickname: 'Barbero Profesional',
       monogram: 'et',
-      specialty: 'Especialista en Ritual de Barba tradicional con toalla caliente y fade en tendencia',
+      specialty: 'Atiende todos los servicios oficiales con el mismo estándar de calidad',
       rating: '4.9',
       cutsCount: '480+',
-      image: '/images/punto-fino/ritual-vapor-real.png'
     },
     {
       id: 'juan-diego',
       name: 'Juan Diego',
-      nickname: 'Barbero Máster',
+      nickname: 'Barbero Profesional',
       monogram: 'JD',
-      specialty: 'Especialista en Experiencia Platinium VIP, corte a tijera y perfilado de cejas',
+      specialty: 'Atiende todos los servicios oficiales con el mismo estándar de calidad',
       rating: '5.0',
       cutsCount: '520+',
-      image: '/images/punto-fino/servicios-catalogo-real.png'
     }
   ];
 
@@ -164,7 +161,7 @@ export default function PublicBookingView() {
           <span className="text-xs text-pf-muted">· 4 cupos disponibles para la tarde</span>
         </div>
         <div className="text-xs font-mono text-pf-muted flex items-center gap-1.5">
-          <MapPin className="w-3.5 h-3.5 text-pf-terracota" /> Santiago de Cali · Tequendama
+          <MapPin className="w-3.5 h-3.5 text-pf-terracota" /> Santiago de Cali · Villacolombia
         </div>
       </div>
 
@@ -296,8 +293,8 @@ export default function PublicBookingView() {
                       : 'hover:border-white/20'
                   }`}
                 >
-                  <div className="w-16 h-16 rounded-md overflow-hidden bg-pf-carbon border border-white/10 shrink-0">
-                    <img src={b.image} alt={b.name} className="w-full h-full object-cover" />
+                  <div className="w-14 h-14 rounded-md overflow-hidden bg-pf-surface border border-white/10 shrink-0 flex items-center justify-center">
+                    <span className="font-display text-xl font-bold text-pf-bone">{b.monogram}</span>
                   </div>
                   <div className="space-y-1 flex-1 min-w-0">
                     <div className="flex items-center justify-between">
@@ -542,8 +539,8 @@ export default function PublicBookingView() {
               <div className="space-y-1">
                 <span className="text-pf-muted font-mono uppercase tracking-wider text-[10px]">Barbero:</span>
                 <div className="font-semibold text-pf-bone flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full overflow-hidden bg-pf-carbon shrink-0">
-                    <img src={currentBarber.image} alt={currentBarber.name} className="w-full h-full object-cover" />
+                  <div className="w-6 h-6 rounded bg-pf-elevated border border-white/10 shrink-0 flex items-center justify-center">
+                    <span className="font-mono text-xs font-bold text-pf-bone">{currentBarber.monogram}</span>
                   </div>
                   {currentBarber.name} ({currentBarber.nickname})
                 </div>
@@ -573,7 +570,7 @@ export default function PublicBookingView() {
                 <span className="text-pf-muted font-mono uppercase tracking-wider text-[10px]">Lugar de atención:</span>
                 <div className="text-pf-bone flex items-center gap-1.5">
                   <MapPin className="w-4 h-4 text-pf-terracota shrink-0" />
-                  Calle 5ta #38-24, Barrio Tequendama, Santiago de Cali
+                  Carrera 12 #53-51, Barrio Villacolombia, Santiago de Cali
                 </div>
               </div>
             </div>
@@ -642,7 +639,7 @@ export default function PublicBookingView() {
               <Download className="w-4 h-4" /> Descargar .ics
             </a>
             <a 
-              href="https://maps.google.com" 
+              href="https://www.google.com/maps/dir/?api=1&destination=3.4475,-76.5058" 
               target="_blank" 
               rel="noreferrer"
               className="pf-btn-outline"

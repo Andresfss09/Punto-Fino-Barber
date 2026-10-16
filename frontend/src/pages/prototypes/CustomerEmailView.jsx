@@ -83,7 +83,7 @@ export default function CustomerEmailView() {
           {/* Logo / Encabezado */}
           <div className="text-center border-b border-white/10 pb-6 space-y-1">
             <div className="text-xs font-mono tracking-widest text-[#E15233] uppercase font-bold">
-              BARBERÍA DE BARRIO · SANTIAGO DE CALI
+              CORTE & CUIDADO MASCULINO · SANTIAGO DE CALI
             </div>
             <div className="text-3xl font-display font-extrabold tracking-tight text-[#F7F5F0]">
               PUNTO FINO
@@ -154,10 +154,10 @@ export default function CustomerEmailView() {
                 <div className="text-[10px] font-mono text-[#9B988F] uppercase">Dirección:</div>
                 <div className="text-[#F7F5F0] flex items-center gap-1.5 font-medium">
                   <MapPin className="w-3.5 h-3.5 text-[#E15233] shrink-0" />
-                  Calle 5ta #38-24, Barrio Tequendama, Santiago de Cali
+                  Carrera 12 #53-51, Barrio Villacolombia, Santiago de Cali
                 </div>
                 <a 
-                  href="https://maps.google.com" 
+                  href="https://www.google.com/maps/dir/?api=1&destination=3.4475,-76.5058" 
                   target="_blank" 
                   rel="noreferrer" 
                   className="text-[11px] text-[#E15233] underline inline-block pt-1"
