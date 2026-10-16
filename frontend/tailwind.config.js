@@ -4,86 +4,53 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: '#000000',
-        'canvas-dark': '#121212',
-        hairline: '#222222',
-        'hairline-light': '#333333',
-        obsidian: '#0a0a0a',
-        'pure-black': '#000000',
-        'ash-charcoal': '#141414',
-        graphite: '#262626',
-        'stone-gray': '#808080',
-        silver: '#b3b3b3',
-        bone: '#ffffff',
-        linen: '#f6f7f2',
-        'sand-khaki': '#dfdbca',
-        gold: {
-          50: '#fefce8',
-          100: '#fef9c3',
-          200: '#fef08a',
-          300: '#fde047',
-          400: '#cfa53b',
-          500: '#b89230',
-          600: '#9e7b24',
-          700: '#7c5f1c',
-          800: '#5c4615',
-          900: '#3d2e0e',
-        },
-        dark: {
-          50: '#1a1a1a',
-          100: '#141414',
-          200: '#111111',
-          300: '#0d0d0d',
-          400: '#0a0a0a',
-          500: '#000000',
-        },
-        depot: {
-          carbon: '#04040b',
-          graphite: '#121113',
-          obsidian: '#1a191b',
-          slate: '#232225',
-          basalt: '#2b292d',
-          iron: '#323035',
-          pewter: '#3c393f',
-          steel: '#49474e',
-          fog: '#7c7a85',
-          silver: '#b5b2bc',
-          ash: '#eeeef0',
-          chalk: '#e5e5e5',
-          'signal-green': '#71d083',
-          'led-green': '#366740',
-          'moss-border': '#2d5736',
-          'forest-wash': '#1d3a24',
-          'fern-ground': '#1b2a1e',
-          'link-blue': '#70b8ff',
-          'lilac': '#baa7ff',
-          'plum-edge': '#291f43',
+        // Paleta de Autor "Punto Fino"
+        pf: {
+          carbon: '#111215',       // Base mate profunda del local
+          surface: '#18191E',      // Superficie cards y nav
+          elevated: '#22242B',     // Superficie elevada / inputs
+          border: 'rgba(255, 255, 255, 0.08)',
+          'border-light': 'rgba(17, 18, 21, 0.12)',
+          
+          bone: '#F7F5F0',         // Lino hueso / texto claro
+          sand: '#EFECE4',         // Arena suave
+          muted: '#9B988F',        // Texto secundario neutro cálido
+          subtle: '#6A6862',       // Líneas y placeholders
+          
+          terracota: '#E15233',    // Acento caleño vibrante
+          'terracota-hover': '#C44327',
+          'terracota-glow': 'rgba(225, 82, 51, 0.25)',
+          
+          brass: '#B89758',        // Latón ahumado / tijeras y navaja
+          'brass-dark': '#967840',
+          'brass-light': '#D4B373',
+          
+          // Estados de servicio
+          available: '#2EA063',    // Cupo libre / abierto
+          busy: '#D9822B',         // En silla / atendiendo
+          danger: '#D34538',       // Cancelado / no-show
         },
       },
       fontFamily: {
-        sans: ['Geist', 'Inter', 'system-ui', 'sans-serif'],
-        display: ['Geist', 'Inter', 'sans-serif'],
-        mono: ['Geist Mono', 'JetBrains Mono', 'monospace'],
-        serif: ['Cormorant Garamond', 'Georgia', 'serif'],
-        editorial: ['Cormorant Garamond', 'Georgia', 'serif'],
+        display: ['Syne', 'sans-serif'],
+        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
       },
       borderRadius: {
-        DEFAULT: '0px',
         none: '0px',
         xs: '2px',
-        sm: '2px',
-        md: '4px',
-        lg: '4px',
-        'depot-card': '6px',
-        'depot-tag': '2px',
+        sm: '4px',
+        md: '6px',
+        lg: '8px',
+        xl: '12px',
+        '2xl': '16px',
         full: '9999px',
       },
       boxShadow: {
-        'subtle': 'rgba(0, 0, 0, 0.2) 0px 1px 3px 0px',
-        'border': '0 0 0 1px rgba(255, 255, 255, 0.08)',
-        'border-active': '0 0 0 1px rgba(207, 165, 59, 0.5)',
-        'card-stack': 'rgba(0,0,0,0.6) 0 0 0 1px, rgba(0,0,0,0.5) 0 4px 16px',
-        'depot-inset': 'rgba(255, 255, 255, 0.06) 0px 1px 0px 0px inset',
+        'fine': '0 0 0 1px rgba(255, 255, 255, 0.08)',
+        'fine-terracota': '0 0 0 1.5px #E15233',
+        'fine-brass': '0 0 0 1.5px #B89758',
+        'elevation': '0 10px 30px -5px rgba(0, 0, 0, 0.6)',
       },
     },
   },

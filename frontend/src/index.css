@@ -13,17 +13,18 @@
   }
 
   body {
-    @apply bg-[#000000] text-[#ffffff] font-sans antialiased;
+    @apply bg-pf-carbon text-pf-bone font-sans antialiased;
     min-height: 100vh;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
-  /* Entradas y controles de formulario estilo Geistlab */
+  /* Entradas y controles de formulario */
   input, textarea, select {
-    @apply text-white bg-[#0d0d0d] border border-[#222222] focus:border-white/40 focus:outline-none transition-all;
+    @apply text-pf-bone bg-pf-surface border border-pf-border focus:border-pf-terracota focus:outline-none transition-all;
     color-scheme: dark;
   }
 
-  /* Evitar autofill blanco */
+  /* Evitar autofill blanco en Chrome/Safari */
   input:-webkit-autofill,
   input:-webkit-autofill:hover, 
   input:-webkit-autofill:focus,
@@ -33,173 +34,128 @@
   select:-webkit-autofill,
   select:-webkit-autofill:hover,
   select:-webkit-autofill:focus {
-    -webkit-text-fill-color: #ffffff !important;
-    -webkit-box-shadow: 0 0 0px 1000px #0d0d0d inset !important;
+    -webkit-text-fill-color: #F7F5F0 !important;
+    -webkit-box-shadow: 0 0 0px 1000px #18191E inset !important;
     transition: background-color 5000s ease-in-out 0s;
   }
 
+  /* Scrollbars refinados */
   ::-webkit-scrollbar {
-    width: 4px;
+    width: 6px;
+    height: 6px;
   }
 
   ::-webkit-scrollbar-track {
-    background: #000000;
+    background: #111215;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #262626;
+    background: #22242B;
+    border-radius: 9999px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #404040;
+    background: #E15233;
   }
 }
 
 @layer components {
   /* ======================================================== */
-  /* FERRARI & GEISTLAB ARCHITECTURAL DESIGN SYSTEM           */
+  /* SISTEMA DE DISEÑO "PUNTO FINO" — OFICIO DE BARRIO       */
   /* ======================================================== */
 
-  /* Ferrari Uppercase Tracked Displays */
-  .display-hero {
-    @apply font-sans uppercase font-medium tracking-[0.25em] text-white;
+  /* Línea de precisión (Hairline) */
+  .pf-hairline {
+    border-color: rgba(255, 255, 255, 0.08);
   }
 
-  .eyebrow {
-    @apply font-sans uppercase font-normal tracking-[0.22em] text-[11px] text-[#888888];
+  .pf-hairline-subtle {
+    border-color: rgba(255, 255, 255, 0.04);
   }
 
-  .label-nav {
-    @apply font-sans uppercase font-normal tracking-[0.2em] text-xs text-[#ffffff];
+  /* El Punto Fino (Dot Indicator) */
+  .pf-dot {
+    @apply inline-block rounded-full;
   }
 
-  .label-cta {
-    @apply font-sans uppercase font-medium tracking-[0.18em] text-xs;
+  .pf-dot-live {
+    @apply w-2 h-2 rounded-full bg-pf-available shadow-[0_0_8px_#2EA063];
   }
 
-  /* Cards with Geistlab Shadow-as-Border philosophy */
-  .card-dark {
-    @apply bg-[#0d0d0d] border border-[#1e1e1e] rounded-none transition-all duration-200;
+  .pf-dot-terracota {
+    @apply w-2 h-2 rounded-full bg-pf-terracota shadow-[0_0_8px_#E15233];
   }
 
-  .card-hover {
-    @apply bg-[#0d0d0d] border border-[#1e1e1e] hover:border-[#383838] rounded-none transition-all duration-200;
+  /* Titulares y Tipografía */
+  .pf-heading {
+    @apply font-display tracking-tight text-pf-bone;
   }
 
-  /* Ferrari / Geistlab Button Recipes */
-  .btn-ferrari-primary {
-    @apply bg-white hover:bg-[#e5e5e5] text-black font-sans font-medium uppercase tracking-[0.18em] text-xs px-6 py-3 rounded-none inline-flex items-center justify-center gap-3 transition-all cursor-pointer shadow-sm active:scale-[0.99];
+  .pf-subheading {
+    @apply font-sans text-pf-muted text-sm font-normal tracking-normal;
   }
 
-  .btn-ferrari-gold {
-    @apply bg-[#cfa53b] hover:bg-[#dfb54b] text-black font-sans font-semibold uppercase tracking-[0.18em] text-xs px-6 py-3 rounded-none inline-flex items-center justify-center gap-3 transition-all cursor-pointer shadow-sm active:scale-[0.99];
+  .pf-eyebrow {
+    @apply font-sans uppercase tracking-[0.2em] text-[11px] font-semibold text-pf-terracota;
   }
 
-  .btn-ferrari-outline {
-    @apply bg-transparent hover:bg-white/5 text-white border border-white/20 hover:border-white font-sans font-medium uppercase tracking-[0.18em] text-xs px-6 py-3 rounded-none inline-flex items-center justify-center gap-3 transition-all cursor-pointer active:scale-[0.99];
+  .pf-price {
+    @apply font-mono font-medium tracking-tight text-pf-bone tabular-nums;
   }
 
-  /* Circle Arrow Icon Button Companion (Ferrari Signature) */
-  .btn-circle-arrow {
-    @apply w-9 h-9 rounded-full border border-white/30 hover:border-white text-white bg-transparent flex items-center justify-center transition-all shrink-0 cursor-pointer;
+  /* Cards del Sistema */
+  .pf-card {
+    @apply bg-pf-surface border border-pf-border rounded-lg transition-all duration-200;
   }
 
-  /* Legacy utility classes mapping cleanly to Ferrari / Geistlab */
-  .editorial-tag {
-    @apply px-2.5 py-1 text-[10px] font-sans font-medium uppercase tracking-[0.18em] rounded-none border border-[#262626] bg-[#0d0d0d] text-[#ffffff] inline-flex items-center gap-1.5;
+  .pf-card-interactive {
+    @apply bg-pf-surface border border-pf-border rounded-lg transition-all duration-200 hover:border-pf-terracota/50 hover:bg-pf-elevated cursor-pointer active:scale-[0.99];
   }
 
-  .editorial-card {
-    @apply bg-[#0d0d0d] border border-[#1e1e1e] hover:border-[#2e2e2e] rounded-none transition-all duration-200;
+  .pf-card-selected {
+    @apply bg-pf-elevated border-pf-terracota shadow-fine-terracota rounded-lg;
   }
 
-  .card {
-    @apply bg-[#0d0d0d] border border-[#1e1e1e] rounded-none overflow-hidden;
+  /* Botones del Sistema */
+  .pf-btn-primary {
+    @apply bg-pf-terracota hover:bg-pf-terracota-hover text-white font-sans font-semibold text-sm px-5 py-3 rounded-md inline-flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed;
   }
 
-  .btn-primary {
-    @apply bg-white hover:bg-[#e5e5e5] text-black font-sans font-medium uppercase tracking-[0.18em] text-xs px-5 py-2.5 rounded-none transition-all cursor-pointer inline-flex items-center justify-center gap-2;
+  .pf-btn-secondary {
+    @apply bg-pf-surface hover:bg-pf-elevated text-pf-bone border border-pf-border hover:border-white/20 font-sans font-medium text-sm px-5 py-3 rounded-md inline-flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed;
   }
 
-  .btn-secondary {
-    @apply bg-transparent hover:bg-white/5 text-white border border-[#2e2e2e] hover:border-white/50 font-sans font-medium uppercase tracking-[0.18em] text-xs px-5 py-2.5 rounded-none transition-all cursor-pointer inline-flex items-center justify-center gap-2;
+  .pf-btn-outline {
+    @apply bg-transparent hover:bg-white/5 text-pf-bone border border-pf-border hover:border-pf-terracota/60 font-sans font-medium text-sm px-4 py-2.5 rounded-md inline-flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98];
   }
 
-  .btn-ghost {
-    @apply text-[#888888] hover:text-white font-sans font-medium uppercase tracking-[0.18em] text-xs px-3 py-1.5 rounded-none transition-all cursor-pointer;
+  .pf-btn-brass {
+    @apply bg-pf-brass hover:bg-pf-brass-dark text-pf-carbon font-sans font-semibold text-sm px-5 py-3 rounded-md inline-flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm active:scale-[0.98];
   }
 
-  .price-pill {
-    @apply bg-white text-black font-mono font-medium text-xs px-3.5 py-1.5 rounded-none inline-flex items-center tracking-tight;
+  /* Inputs & Formularios */
+  .pf-input {
+    @apply w-full bg-pf-surface border border-pf-border rounded-md px-3.5 py-3 text-pf-bone text-sm placeholder:text-pf-subtle focus:outline-none focus:border-pf-terracota focus:ring-1 focus:ring-pf-terracota transition-all;
   }
 
-  .brutal-card {
-    @apply bg-[#0d0d0d] border border-[#1e1e1e] rounded-none transition-all;
+  .pf-label {
+    @apply block text-xs font-medium text-pf-muted mb-1.5 uppercase tracking-wider;
   }
 
-  .brutal-btn-primary {
-    @apply bg-[#cfa53b] hover:bg-[#dfb54b] text-black font-medium uppercase tracking-[0.18em] text-xs px-5 py-2.5 rounded-none transition-all cursor-pointer inline-flex items-center justify-center gap-2;
+  /* Tags & Badges */
+  .pf-badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border border-pf-border bg-pf-elevated text-pf-bone;
   }
 
-  .brutal-btn-outline {
-    @apply bg-[#0d0d0d] hover:bg-[#141414] text-white border border-[#262626] hover:border-white font-medium uppercase tracking-[0.18em] text-xs px-5 py-2.5 rounded-none transition-all cursor-pointer inline-flex items-center justify-center gap-2;
+  .pf-badge-terracota {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border border-pf-terracota/30 bg-pf-terracota/10 text-pf-terracota;
   }
 
-  .input-field {
-    @apply w-full bg-[#0d0d0d] border border-[#222222] rounded-none px-3.5 py-2.5 text-white text-xs
-           placeholder:text-[#666666] focus:outline-none focus:border-white/50
-           transition-all duration-150;
+  .pf-badge-available {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border border-pf-available/30 bg-pf-available/10 text-pf-available;
   }
 
-  .label {
-    @apply block text-[11px] uppercase tracking-[0.18em] font-sans font-medium text-[#888888] mb-1.5;
-  }
-
-  /* ======================================================== */
-  /* DEPOT DEVELOPER CONSOLE DESIGN SYSTEM                    */
-  /* ======================================================== */
-
-  .btn-depot-primary {
-    @apply bg-[#71d083] hover:bg-[#82e294] text-[#04040b] font-medium tracking-[0.025em] text-xs px-4 py-2.5 rounded-[6px] border border-[#366740] inline-flex items-center justify-center gap-2 transition-all cursor-pointer shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed;
-  }
-
-  .btn-depot-outline {
-    @apply bg-transparent hover:bg-white/[0.04] text-[#eeeef0] border border-[#2b292d] hover:border-[#3c393f] font-medium tracking-[0.025em] text-xs px-4 py-2.5 rounded-[6px] inline-flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed;
-  }
-
-  .card-depot {
-    @apply bg-[#121113] border border-[#2b292d] rounded-[6px] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)];
-  }
-
-  .card-depot-secondary {
-    @apply bg-[#1a191b] border border-[#2b292d] rounded-[6px];
-  }
-
-  .input-depot {
-    @apply w-full bg-[#1a191b] border border-[#2b292d] rounded-[6px] px-3.5 py-2.5 text-[#eeeef0] text-xs placeholder:text-[#7c7a85] focus:outline-none focus:border-[#71d083]/70 transition-all duration-150;
-  }
-
-  .tag-depot-green {
-    @apply rounded-[2px] border border-[#2d5736] bg-[#1b2a1e] text-[#71d083] uppercase tracking-[0.025em] text-[10px] font-mono px-2 py-0.5 inline-flex items-center gap-1.5;
-  }
-
-  .tag-depot-neutral {
-    @apply rounded-[2px] border border-[#2b292d] bg-[#1a191b] text-[#b5b2bc] uppercase tracking-[0.025em] text-[10px] font-mono px-2 py-0.5 inline-flex items-center gap-1.5;
-  }
-
-  .tag-depot-danger {
-    @apply rounded-[2px] border border-rose-500/30 bg-rose-500/10 text-rose-400 uppercase tracking-[0.025em] text-[10px] font-mono px-2 py-0.5 inline-flex items-center gap-1.5;
-  }
-
-  .tag-depot-blue {
-    @apply rounded-[2px] border border-[#70b8ff]/30 bg-[#70b8ff]/10 text-[#70b8ff] uppercase tracking-[0.025em] text-[10px] font-mono px-2 py-0.5 inline-flex items-center gap-1.5;
-  }
-
-  .tag-depot-lilac {
-    @apply rounded-[2px] border border-[#baa7ff]/30 bg-[#baa7ff]/10 text-[#baa7ff] uppercase tracking-[0.025em] text-[10px] font-mono px-2 py-0.5 inline-flex items-center gap-1.5;
-  }
-
-  .depot-led {
-    @apply inline-block w-2 h-2 rounded-full bg-[#71d083] shadow-[0_0_8px_#71d083];
+  .pf-badge-brass {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border border-pf-brass/30 bg-pf-brass/10 text-pf-brass-light;
   }
 }

@@ -18,6 +18,7 @@ import AdminAppointments from './pages/admin/AdminAppointments';
 import AdminServices from './pages/admin/AdminServices';
 import AdminBarbers from './pages/admin/AdminBarbers';
 import AdminUsers from './pages/admin/AdminUsers';
+import PrototypeHub from './pages/prototypes/PrototypeHub';
 
 
 // Rutas protegidas por rol
@@ -36,6 +37,8 @@ export default function App() {
         <Routes location={location} key={location.pathname}>
           {/* Públicas */}
           <Route path="/" element={<PageTransition><HomePage /><Footer /></PageTransition>} />
+          <Route path="/prototipos" element={<PrototypeHub />} />
+          <Route path="/design-system" element={<Navigate to="/prototipos" replace />} />
           <Route path="/login" element={<PageTransition><LoginPage /><Footer /></PageTransition>} />
           <Route path="/register" element={<Navigate to="/#reservar" replace />} />
           <Route path="/reservar" element={<PageTransition><BookingPage /><Footer /></PageTransition>} />
