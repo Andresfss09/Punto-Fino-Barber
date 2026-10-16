@@ -110,3 +110,4 @@ Las capturas generadas en alta resolución con motor Chromium se encuentran arch
 3. `03_app_movil_pos_checkout_nequi.png`: Cobro en silla POS con Nequi, selector de propina voluntaria y desglose de comisión del 50%.
 4. `04_app_movil_arqueo_caja_admin.png`: Arqueo de caja del administrador con conciliación de efectivo en gaveta y nómina por barbero.
 5. `05_app_movil_offline_sqlite.png`: Simulación de modo sin red (Offline) con SQLite local y botón de sincronización diferida hacia Neon DB.
+

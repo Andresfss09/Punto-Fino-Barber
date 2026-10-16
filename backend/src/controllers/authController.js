@@ -8,7 +8,7 @@ const { generateToken, generateRandomToken, sendSuccess, sendError } = require('
 // @access  Public
 exports.login = async (req, res) => {
   try {
-    const emailOrPhone = req.body.email || req.body.phoneOrEmail;
+    const emailOrPhone = req.body.email || req.body.phoneOrEmail || req.body.identifier;
     const { password, deviceId, deviceName } = req.body;
 
     if (!emailOrPhone || !password) {

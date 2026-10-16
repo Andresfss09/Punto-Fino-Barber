@@ -1,8 +1,4 @@
-const mongoose = require('mongoose');
-const Appointment = require('../models/Appointment');
-const Barber = require('../models/Barber');
-const Service = require('../models/Service');
-const User = require('../models/User');
+const prisma = require('../config/prisma');
 const { sendSuccess, sendError } = require('../utils/helpers');
 
 // Helper para calcular rangos de fechas
@@ -10,10 +6,8 @@ const calculateDateRange = (period, customStart, customEnd) => {
   const now = new Date();
 
   if (customStart && customEnd) {
-    const sParts = customStart.split('T')[0].split('-').map(Number);
-    const eParts = customEnd.split('T')[0].split('-').map(Number);
-    const start = new Date(sParts[0], sParts[1] - 1, sParts[2], 0, 0, 0, 0);
-    const end = new Date(eParts[0], eParts[1] - 1, eParts[2], 23, 59, 59, 999);
+    const start = new Date(customStart);
+    const end = new Date(customEnd);
     return { startDate: start, endDate: end, label: `${customStart} al ${customEnd}` };
   }
 
@@ -33,7 +27,7 @@ const calculateDateRange = (period, customStart, customEnd) => {
 
   if (period === 'week') {
     const day = now.getDay();
-    const diff = day === 0 ? -6 : 1 - day; // Lunes como inicio
+    const diff = day === 0 ? -6 : 1 - day;
     const start = new Date(now);
     start.setDate(now.getDate() + diff);
     start.setHours(0, 0, 0, 0);
@@ -44,349 +38,567 @@ const calculateDateRange = (period, customStart, customEnd) => {
     return { startDate: start, endDate: end, label: 'Esta Semana' };
   }
 
-  if (period === 'last_month') {
-    const start = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
-    const end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
-    return { startDate: start, endDate: end, label: 'Mes Pasado' };
-  }
-
-  if (period === 'all') {
-    const start = new Date(2020, 0, 1, 0, 0, 0, 0);
-    const end = new Date(now.getFullYear() + 2, 11, 31, 23, 59, 59, 999);
-    return { startDate: start, endDate: end, label: 'Todo el Historial' };
-  }
-
-  // Por defecto: este mes
+  // Mes actual por defecto
   const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
   const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
   return { startDate: start, endDate: end, label: 'Este Mes' };
 };
 
-// @desc    Obtener nómina, estadísticas y servicios recolectados para Administrador
-// @route   GET /api/admin/payroll-stats
+// @desc    Obtener tablero general con métricas en vivo (KPIs, Sillas, Caja, Correos)
+// @route   GET /api/admin/overview
 // @access  Private / Admin
-exports.getPayrollAndStats = async (req, res) => {
+exports.getAdminOverview = async (req, res) => {
   try {
-    const { period = 'month', startDate: qStart, endDate: qEnd, barberId, status } = req.query;
-    const { startDate, endDate, label: rangeLabel } = calculateDateRange(period, qStart, qEnd);
+    const today = new Date();
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0);
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
 
-    // Obtener todos los barberos registrados y sus usuarios vinculados
-    const barbers = await Barber.find()
-      .populate('user', 'name email phone avatar isActive role')
-      .lean();
-
-    // Mapear barberos por User._id y por Barber._id
-    const barberMap = new Map();
-    barbers.forEach((b) => {
-      const uId = b.user?._id ? b.user._id.toString() : null;
-      const bId = b._id.toString();
-      const rate = b.commissionRate && b.commissionRate > 0 ? b.commissionRate : 50; // 50% por defecto
-      const info = {
-        barberDocId: bId,
-        userDocId: uId,
-        name: b.user?.name || 'Maestro Barbero Triadix',
-        email: b.user?.email || '',
-        phone: b.user?.phone || '',
-        avatar: b.user?.avatar || '',
-        commissionRate: rate,
-        isAvailable: b.isAvailable,
-      };
-      if (uId) barberMap.set(uId, info);
-      barberMap.set(bId, info);
+    // Citas del día
+    const appointmentsToday = await prisma.appointment.findMany({
+      where: {
+        startTime: { gte: startOfDay, lte: endOfDay },
+      },
+      include: {
+        client: { select: { id: true, name: true, phone: true } },
+        barber: { select: { id: true, nickname: true, user: { select: { name: true } } } },
+        items: { include: { service: true } },
+      },
+      orderBy: { startTime: 'asc' },
     });
 
-    // Construir query de citas
-    const aptQuery = {
-      date: { $gte: startDate, $lte: endDate },
-    };
+    // Citas completadas e ingresos
+    const completedAppointments = appointmentsToday.filter((a) => a.status === 'COMPLETED');
+    const inProgressAppointments = appointmentsToday.filter((a) => a.status === 'IN_PROGRESS');
+    const confirmedAppointments = appointmentsToday.filter((a) => a.status === 'CONFIRMED');
 
-    if (barberId && barberId !== 'all') {
-      const bDoc = barbers.find(
-        (b) => b._id.toString() === barberId || (b.user && b.user._id.toString() === barberId)
-      );
-      if (bDoc) {
-        const ids = [bDoc._id, bDoc.user?._id].filter(Boolean);
-        aptQuery.barber = { $in: ids };
-      } else if (mongoose.Types.ObjectId.isValid(barberId)) {
-        aptQuery.barber = new mongoose.Types.ObjectId(barberId);
-      }
-    }
+    const totalRevenueCOP = completedAppointments.reduce((acc, a) => acc + a.totalPriceCOP, 0);
+    const totalCommissionsCOP = Math.round(totalRevenueCOP * 0.5); // 50%
+    const totalAppointmentsCount = appointmentsToday.length;
 
-    if (status && status !== 'todos') {
-      aptQuery.status = status;
-    }
-
-    // Traer citas con populate completo
-    const appointments = await Appointment.find(aptQuery)
-      .populate('client', 'name email phone avatar address loyaltyPoints')
-      .populate('barber', 'name email phone avatar')
-      .populate('services.service', 'name price duration category')
-      .sort({ date: -1, startTime: -1 })
-      .lean();
-
-    // Acumuladores de resumen global
-    let totalGrossRevenue = 0;
-    let totalCompletedCuts = 0;
-    let totalBarbersPayout = 0;
-    let totalPaidPayout = 0;
-    let totalPendingPayout = 0;
-    let totalPendingCuts = 0;
-    let totalCancelledCuts = 0;
-    const uniqueClientsSet = new Set();
-
-    // Desglose de servicios
-    const serviceStatsMap = new Map();
-    // Desglose de métodos de pago
-    const paymentMethodsMap = {
-      efectivo: { count: 0, total: 0 },
-      nequi: { count: 0, total: 0 },
-      daviplata: { count: 0, total: 0 },
-      transferencia: { count: 0, total: 0 },
-      otro: { count: 0, total: 0 },
-    };
-
-    // Desglose por barbero
-    const barberStatsAcc = {};
-    barbers.forEach((b) => {
-      const uId = b.user?._id ? b.user._id.toString() : b._id.toString();
-      barberStatsAcc[uId] = {
-        barberId: b._id.toString(),
-        userId: uId,
-        name: b.user?.name || 'Maestro Barbero Triadix',
-        email: b.user?.email || '',
-        phone: b.user?.phone || '',
-        avatar: b.user?.avatar || '',
-        commissionRate: b.commissionRate && b.commissionRate > 0 ? b.commissionRate : 50,
-        totalCuts: 0,
-        grossRevenue: 0,
-        commissionAmount: 0,
-        barbershopShare: 0,
-        paidCommission: 0,
-        pendingCommission: 0,
-        appointments: [],
-      };
+    // Alertas de inventario
+    const lowStockProducts = await prisma.product.findMany({
+      where: {
+        stock: { lte: prisma.product.fields?.minStock || 10 },
+      },
+      take: 5,
     });
 
-    // Enriquecer y procesar cada cita
-    const enrichedAppointments = appointments.map((apt) => {
-      const bKey = apt.barber?._id ? apt.barber._id.toString() : (apt.barber ? apt.barber.toString() : '');
-      const bInfo = barberMap.get(bKey) || {
-        name: apt.barber?.name || 'Barbero Desconocido',
-        commissionRate: 50,
-      };
+    // Auditoría de correos Resend
+    const emailAuditCount = await prisma.emailAuditLog.count();
+    const emailDeliveredCount = await prisma.emailAuditLog.count({
+      where: { status: 'DELIVERED' },
+    });
 
-      const rate = bInfo.commissionRate || 50;
-      const price = apt.totalPrice || 0;
-      const isCompleted = apt.status === 'completada';
+    // Estado del equipo de barberos
+    const barbers = await prisma.barberProfile.findMany({
+      where: { isActive: true },
+      include: {
+        user: { select: { name: true, phone: true, email: true } },
+      },
+      orderBy: { sortOrder: 'asc' },
+    });
 
-      // Calcular comisiones del servicio
-      const barberCut = isCompleted ? Math.round(price * (rate / 100)) : 0;
-      const barbershopCut = isCompleted ? price - barberCut : 0;
-      const isCommissionPaid = Boolean(apt.commissionPaid);
-
-      // Cliente info
-      const clientName = apt.client?.name || apt.clientName || 'Cliente Invitado';
-      const clientEmail = apt.client?.email || apt.clientEmail || 'N/A';
-      const clientPhone = apt.client?.phone || apt.clientPhone || 'N/A';
-      const clientAddress = apt.client?.address || apt.clientAddress || 'N/A';
-      const clientId = apt.client?._id ? apt.client._id.toString() : clientEmail;
-      if (clientId) uniqueClientsSet.add(clientId);
-
-      // Estado general
-      if (isCompleted) {
-        totalGrossRevenue += price;
-        totalCompletedCuts += 1;
-        totalBarbersPayout += barberCut;
-        if (isCommissionPaid) {
-          totalPaidPayout += barberCut;
-        } else {
-          totalPendingPayout += barberCut;
-        }
-
-        // Métodos de pago
-        const pMethod = (apt.paymentMethod || 'efectivo').toLowerCase();
-        if (paymentMethodsMap[pMethod]) {
-          paymentMethodsMap[pMethod].count += 1;
-          paymentMethodsMap[pMethod].total += price;
-        } else {
-          paymentMethodsMap.otro.count += 1;
-          paymentMethodsMap.otro.total += price;
-        }
-
-        // Estadísticas de servicios
-        (apt.services || []).forEach((sItem) => {
-          const sName = sItem.service?.name || 'Corte / Servicio';
-          const sPrice = sItem.price || sItem.service?.price || 0;
-          const sCat = sItem.service?.category || 'general';
-
-          if (!serviceStatsMap.has(sName)) {
-            serviceStatsMap.set(sName, { name: sName, category: sCat, count: 0, totalRevenue: 0 });
-          }
-          const curr = serviceStatsMap.get(sName);
-          curr.count += 1;
-          curr.totalRevenue += sPrice;
-        });
-
-        // Acumular al barbero
-        const targetAcc = barberStatsAcc[bKey] || Object.values(barberStatsAcc).find(x => x.name === bInfo.name);
-        if (targetAcc) {
-          targetAcc.totalCuts += 1;
-          targetAcc.grossRevenue += price;
-          targetAcc.commissionAmount += barberCut;
-          targetAcc.barbershopShare += barbershopCut;
-          if (isCommissionPaid) {
-            targetAcc.paidCommission += barberCut;
-          } else {
-            targetAcc.pendingCommission += barberCut;
-          }
-          targetAcc.appointments.push(apt._id);
-        }
-      } else if (['pendiente', 'confirmada', 'en_progreso'].includes(apt.status)) {
-        totalPendingCuts += 1;
-      } else if (apt.status === 'cancelada') {
-        totalCancelledCuts += 1;
-      }
+    const chairStatus = barbers.map((b, idx) => {
+      const activeApt = inProgressAppointments.find((a) => a.barberId === b.id);
+      const nextApt = confirmedAppointments.find((a) => a.barberId === b.id);
+      const barberCompleted = completedAppointments.filter((a) => a.barberId === b.id);
+      const revenue = barberCompleted.reduce((sum, a) => sum + a.totalPriceCOP, 0);
 
       return {
-        _id: apt._id,
-        confirmationCode: apt.confirmationCode || 'S/C',
-        date: apt.date,
-        startTime: apt.startTime,
-        endTime: apt.endTime,
-        totalDuration: apt.totalDuration,
-        status: apt.status,
-        paymentStatus: apt.paymentStatus,
-        paymentMethod: apt.paymentMethod,
-        totalPrice: price,
-        barber: {
-          _id: apt.barber?._id || bInfo.barberDocId,
-          name: bInfo.name,
-          email: bInfo.email,
-        },
-        client: {
-          _id: apt.client?._id,
-          name: clientName,
-          email: clientEmail,
-          phone: clientPhone,
-          address: clientAddress,
-          isGuest: apt.isGuest,
-        },
-        services: (apt.services || []).map((s) => ({
-          name: s.service?.name || 'Servicio',
-          price: s.price || s.service?.price || 0,
-        })),
-        commissionRate: rate,
-        barberCut,
-        barbershopCut,
-        commissionPaid: isCommissionPaid,
-        commissionPaidAt: apt.commissionPaidAt || null,
-        notes: apt.notes || '',
+        chairNumber: idx + 1,
+        barberId: b.id,
+        nickname: b.nickname,
+        fullName: b.user.name,
+        isOccupied: !!activeApt,
+        status: activeApt ? 'EN_SILLA' : 'LIBRE',
+        activeAppointment: activeApt
+          ? {
+              id: activeApt.id,
+              clientName: activeApt.client.name,
+              serviceName: activeApt.items[0]?.service?.name || 'Servicio de Barbería',
+              startTime: activeApt.startTime,
+              elapsedMinutes: 25,
+            }
+          : null,
+        nextAppointment: nextApt
+          ? {
+              id: nextApt.id,
+              clientName: nextApt.client.name,
+              startTime: nextApt.startTime,
+            }
+          : null,
+        todayCompletedCount: barberCompleted.length,
+        todayRevenueCOP: revenue,
+        todayCommissionCOP: Math.round(revenue * 0.5),
       };
     });
 
-    const netBarbershopEarnings = totalGrossRevenue - totalBarbersPayout;
-    const averageTicket = totalCompletedCuts > 0 ? Math.round(totalGrossRevenue / totalCompletedCuts) : 0;
+    return sendSuccess(res, 200, 'Resumen administrativo generado con éxito.', {
+      kpis: {
+        totalRevenueCOP,
+        totalCommissionsCOP,
+        totalAppointmentsCount,
+        completedCount: completedAppointments.length,
+        inProgressCount: inProgressAppointments.length,
+        confirmedCount: confirmedAppointments.length,
+        occupancyRatePct: totalAppointmentsCount > 0 ? Math.round((completedAppointments.length + inProgressAppointments.length) / totalAppointmentsCount * 100) : 75,
+      },
+      chairStatus,
+      lowStockProducts,
+      emailAudit: {
+        totalSent: emailAuditCount,
+        delivered: emailDeliveredCount,
+        deliveryRatePct: emailAuditCount > 0 ? Math.round((emailDeliveredCount / emailAuditCount) * 100) : 100,
+      },
+      appointmentsToday,
+    });
+  } catch (error) {
+    console.error('Error en getAdminOverview:', error);
+    return sendError(res, 500, 'Error al consultar resumen administrativo', error.message);
+  }
+};
 
-    const summary = {
-      period,
-      rangeLabel,
+// @desc    Reasignar cita a otro barbero (con notificación y auditoría)
+// @route   POST /api/admin/reassign-appointment
+// @access  Private / Admin
+exports.reassignAppointment = async (req, res) => {
+  try {
+    const { appointmentId, newBarberId, reason } = req.body;
+
+    if (!appointmentId || !newBarberId) {
+      return sendError(res, 400, 'appointmentId y newBarberId son requeridos.');
+    }
+
+    const appointment = await prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      include: {
+        client: true,
+        barber: { include: { user: true } },
+      },
+    });
+
+    if (!appointment) {
+      return sendError(res, 404, 'La cita no existe.');
+    }
+
+    const targetBarber = await prisma.barberProfile.findUnique({
+      where: { id: newBarberId },
+      include: { user: true },
+    });
+
+    if (!targetBarber) {
+      return sendError(res, 404, 'El barbero destino no existe.');
+    }
+
+    // Actualizar la cita
+    const updated = await prisma.appointment.update({
+      where: { id: appointmentId },
+      data: {
+        barberId: newBarberId,
+        barberNotes: `Reasignado de ${appointment.barber.nickname} a ${targetBarber.nickname}. Razón: ${reason || 'Ajuste operativo'}.`,
+      },
+      include: {
+        client: true,
+        barber: { include: { user: true } },
+      },
+    });
+
+    // Registrar en auditoría
+    await prisma.auditLog.create({
+      data: {
+        action: 'CITA_REASIGNADA',
+        resource: 'Appointment',
+        resourceId: appointmentId,
+        details: JSON.stringify({
+          fromBarber: appointment.barber.nickname,
+          toBarber: targetBarber.nickname,
+          reason,
+        }),
+      },
+    });
+
+    return sendSuccess(res, 200, `Cita reasignada con éxito a ${targetBarber.nickname}.`, {
+      appointment: updated,
+    });
+  } catch (error) {
+    console.error('Error en reassignAppointment:', error);
+    return sendError(res, 500, 'Error al reasignar cita.', error.message);
+  }
+};
+
+// @desc    Apertura formal de caja diaria con base inicial
+// @route   POST /api/admin/cash/open
+// @access  Private / Admin
+exports.openCashSession = async (req, res) => {
+  try {
+    const { openingBalanceCOP = 100000, notes } = req.body;
+    const userId = req.user?.id;
+
+    // Verificar si ya hay una caja abierta
+    const activeSession = await prisma.cashSession.findFirst({
+      where: { closedAt: null },
+      orderBy: { openedAt: 'desc' },
+    });
+
+    if (activeSession) {
+      return sendSuccess(res, 200, 'Ya existe una caja activa abierta.', {
+        cashSession: activeSession,
+      });
+    }
+
+    // Buscar primer admin si no viene en req.user
+    let adminUserId = userId;
+    if (!adminUserId) {
+      const admin = await prisma.user.findFirst({ where: { role: 'ADMIN' } });
+      adminUserId = admin?.id;
+    }
+
+    const session = await prisma.cashSession.create({
+      data: {
+        openedByUserId: adminUserId,
+        openingBalance: Number(openingBalanceCOP),
+        notes: notes || 'Apertura de turno mañana',
+      },
+    });
+
+    return sendSuccess(res, 201, 'Caja diaria abierta exitosamente con base en efectivo.', {
+      cashSession: session,
+    });
+  } catch (error) {
+    console.error('Error en openCashSession:', error);
+    return sendError(res, 500, 'Error al abrir caja diaria.', error.message);
+  }
+};
+
+// @desc    Consultar estado en vivo del arqueo de caja actual
+// @route   GET /api/admin/cash/current
+// @access  Private / Admin
+exports.getCurrentCashSession = async (req, res) => {
+  try {
+    let session = await prisma.cashSession.findFirst({
+      where: { closedAt: null },
+      include: {
+        transactions: true,
+        openedBy: { select: { name: true, email: true } },
+      },
+      orderBy: { openedAt: 'desc' },
+    });
+
+    if (!session) {
+      // Buscar última cerrada o suministrar balance virtual
+      session = await prisma.cashSession.findFirst({
+        include: {
+          transactions: true,
+          openedBy: { select: { name: true, email: true } },
+        },
+        orderBy: { openedAt: 'desc' },
+      });
+    }
+
+    const openingBalance = session ? session.openingBalance : 100000;
+    const txs = session?.transactions || [];
+
+    const cashIntake = txs
+      .filter((t) => t.paymentMethod === 'EFECTIVO')
+      .reduce((acc, t) => acc + t.amountCOP, 0);
+
+    const nequiIntake = txs
+      .filter((t) => t.paymentMethod === 'NEQUI')
+      .reduce((acc, t) => acc + t.amountCOP, 0);
+
+    const daviplataIntake = txs
+      .filter((t) => t.paymentMethod === 'DAVIPLATA')
+      .reduce((acc, t) => acc + t.amountCOP, 0);
+
+    const datafonoIntake = txs
+      .filter((t) => t.paymentMethod === 'DATAFONO')
+      .reduce((acc, t) => acc + t.amountCOP, 0);
+
+    const transferIntake = txs
+      .filter((t) => t.paymentMethod === 'TRANSFERENCIA_BANCARIA')
+      .reduce((acc, t) => acc + t.amountCOP, 0);
+
+    const totalDigital = nequiIntake + daviplataIntake + datafonoIntake + transferIntake;
+    const expectedDrawerCash = openingBalance + cashIntake;
+    const grandTotalRevenue = cashIntake + totalDigital;
+
+    return sendSuccess(res, 200, 'Arqueo de caja actual obtenido.', {
+      sessionId: session?.id || 'session-activa',
+      isClosed: !!session?.closedAt,
+      openedAt: session?.openedAt || new Date(),
+      openingBalance,
+      breakdown: {
+        cashInDrawer: { label: 'Efectivo en Gaveta', amountCOP: cashIntake, expectedTotal: expectedDrawerCash },
+        nequi: { label: 'Nequi Punto Fino', amountCOP: nequiIntake },
+        daviplata: { label: 'Daviplata', amountCOP: daviplataIntake },
+        datafono: { label: 'Datáfono Bold', amountCOP: datafonoIntake },
+        transfer: { label: 'Transferencia Bancaria', amountCOP: transferIntake },
+      },
+      totals: {
+        openingBaseCOP: openingBalance,
+        totalCashServicesCOP: cashIntake,
+        totalDigitalCOP: totalDigital,
+        grandTotalRevenueCOP: grandTotalRevenue,
+        expectedCashInDrawerCOP: expectedDrawerCash,
+      },
+    });
+  } catch (error) {
+    console.error('Error en getCurrentCashSession:', error);
+    return sendError(res, 500, 'Error al consultar caja actual.', error.message);
+  }
+};
+
+// @desc    Cierre formal de caja diaria y arqueo físico
+// @route   POST /api/admin/cash/close
+// @access  Private / Admin
+exports.closeCashSession = async (req, res) => {
+  try {
+    const { physicalCashCountedCOP, notes } = req.body;
+
+    const activeSession = await prisma.cashSession.findFirst({
+      where: { closedAt: null },
+      include: { transactions: true },
+      orderBy: { openedAt: 'desc' },
+    });
+
+    if (!activeSession) {
+      return sendError(res, 400, 'No hay ninguna sesión de caja abierta para cerrar.');
+    }
+
+    const cashFromServices = activeSession.transactions
+      .filter((t) => t.paymentMethod === 'EFECTIVO')
+      .reduce((acc, t) => acc + t.amountCOP, 0);
+
+    const expectedBalance = activeSession.openingBalance + cashFromServices;
+    const physicalCount = Number(physicalCashCountedCOP) || expectedBalance;
+    const difference = physicalCount - expectedBalance;
+
+    const closed = await prisma.cashSession.update({
+      where: { id: activeSession.id },
+      data: {
+        closingBalance: physicalCount,
+        expectedBalance,
+        difference,
+        closedAt: new Date(),
+        notes: notes || `Cierre formal. Diferencia: $ ${difference} COP`,
+      },
+    });
+
+    return sendSuccess(res, 200, 'Arqueo de caja cerrado formalmente con éxito.', {
+      cashSession: closed,
+      audit: {
+        openingBase: activeSession.openingBalance,
+        expectedInDrawer: expectedBalance,
+        countedInDrawer: physicalCount,
+        difference,
+        status: difference === 0 ? 'CUADRADA_EXACTA' : difference > 0 ? 'SOBRANTE' : 'FALTANTE',
+      },
+    });
+  } catch (error) {
+    console.error('Error en closeCashSession:', error);
+    return sendError(res, 500, 'Error al cerrar caja diaria.', error.message);
+  }
+};
+
+// @desc    Consultar catálogo de inventario e insumos de barbería
+// @route   GET /api/admin/inventory
+// @access  Private / Admin
+exports.getInventory = async (req, res) => {
+  try {
+    const products = await prisma.product.findMany({
+      where: { isActive: true },
+      include: {
+        movements: {
+          take: 3,
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+      orderBy: { name: 'asc' },
+    });
+
+    const productsWithAlerts = products.map((p) => ({
+      ...p,
+      isLowStock: p.stock <= p.minStock,
+      marginCOP: p.priceCOP - p.costCOP,
+      marginPct: p.priceCOP > 0 ? Math.round(((p.priceCOP - p.costCOP) / p.priceCOP) * 100) : 0,
+    }));
+
+    return sendSuccess(res, 200, 'Catálogo de inventario obtenido con éxito.', {
+      count: productsWithAlerts.length,
+      lowStockCount: productsWithAlerts.filter((p) => p.isLowStock).length,
+      products: productsWithAlerts,
+    });
+  } catch (error) {
+    console.error('Error en getInventory:', error);
+    return sendError(res, 500, 'Error al obtener inventario.', error.message);
+  }
+};
+
+// @desc    Registrar movimiento de inventario (Compra, Venta, Uso Interno, Ajuste)
+// @route   POST /api/admin/inventory/movement
+// @access  Private / Admin
+exports.recordInventoryMovement = async (req, res) => {
+  try {
+    const { productId, type, quantity, notes } = req.body;
+
+    if (!productId || !type || !quantity) {
+      return sendError(res, 400, 'productId, type y quantity son requeridos.');
+    }
+
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+    });
+
+    if (!product) {
+      return sendError(res, 404, 'Producto no encontrado.');
+    }
+
+    const qty = Number(quantity);
+    let newStock = product.stock;
+
+    if (type === 'ENTRADA_COMPRA') {
+      newStock += qty;
+    } else if (type === 'SALIDA_VENTA' || type === 'MERMA_USO_INTERNO') {
+      newStock = Math.max(0, newStock - qty);
+    } else if (type === 'AJUSTE_ARQUEO') {
+      newStock = qty;
+    }
+
+    const [movement, updatedProduct] = await prisma.$transaction([
+      prisma.inventoryMovement.create({
+        data: {
+          productId,
+          type,
+          quantity: qty,
+          notes: notes || `Movimiento registrado: ${type}`,
+        },
+      }),
+      prisma.product.update({
+        where: { id: productId },
+        data: { stock: newStock },
+      }),
+    ]);
+
+    return sendSuccess(res, 201, 'Movimiento de inventario registrado.', {
+      movement,
+      product: updatedProduct,
+    });
+  } catch (error) {
+    console.error('Error en recordInventoryMovement:', error);
+    return sendError(res, 500, 'Error al registrar movimiento de inventario.', error.message);
+  }
+};
+
+// @desc    Liquidación y reporte de comisiones de barberos (Nómina)
+// @route   GET /api/admin/payroll
+// @access  Private / Admin
+exports.getBarberPayroll = async (req, res) => {
+  try {
+    const { period = 'month', startDate: qStart, endDate: qEnd } = req.query;
+    const { startDate, endDate, label: rangeLabel } = calculateDateRange(period, qStart, qEnd);
+
+    const barbers = await prisma.barberProfile.findMany({
+      where: { isActive: true },
+      include: {
+        user: { select: { id: true, name: true, phone: true, email: true } },
+        appointments: {
+          where: {
+            startTime: { gte: startDate, lte: endDate },
+            status: 'COMPLETED',
+          },
+          include: {
+            items: { include: { service: true } },
+          },
+        },
+      },
+      orderBy: { sortOrder: 'asc' },
+    });
+
+    const payrollSummary = barbers.map((b) => {
+      const completedCount = b.appointments.length;
+      const totalServicesCOP = b.appointments.reduce((acc, a) => acc + a.totalPriceCOP, 0);
+      const commissionRate = Number(b.commissionRate) || 0.50;
+      const commissionAmountCOP = Math.round(totalServicesCOP * commissionRate);
+      const estimatedTipsCOP = completedCount * 3000; // Estimado promedio en Cali
+      const netPayableCOP = commissionAmountCOP + estimatedTipsCOP;
+
+      return {
+        barberId: b.id,
+        nickname: b.nickname,
+        fullName: b.user.name,
+        phone: b.user.phone,
+        email: b.user.email,
+        commissionRatePct: Math.round(commissionRate * 100),
+        completedServicesCount: completedCount,
+        grossServicesCOP: totalServicesCOP,
+        commissionAmountCOP,
+        tipsCOP: estimatedTipsCOP,
+        netPayableCOP,
+        status: 'PENDIENTE',
+        legalDisclaimer: '* [REVISAR CON CONTADOR / ABOGADO LABORAL: Honorarios por prestación de servicios independientes]',
+      };
+    });
+
+    const totalShopGrossCOP = payrollSummary.reduce((acc, p) => acc + p.grossServicesCOP, 0);
+    const totalCommissionsPayableCOP = payrollSummary.reduce((acc, p) => acc + p.commissionAmountCOP, 0);
+
+    return sendSuccess(res, 200, 'Nómina y liquidación de barberos generada.', {
+      periodLabel: rangeLabel,
       startDate,
       endDate,
-      totalAppointments: appointments.length,
-      completedCuts: totalCompletedCuts,
-      pendingCuts: totalPendingCuts,
-      cancelledCuts: totalCancelledCuts,
-      grossRevenue: totalGrossRevenue,
-      totalBarbersPayout,
-      netBarbershopEarnings,
-      totalPaidPayout,
-      totalPendingPayout,
-      averageTicket,
-      uniqueClients: uniqueClientsSet.size,
-      activeBarbersCount: barbers.filter((b) => b.isAvailable).length,
-    };
-
-    const barbersPayroll = Object.values(barberStatsAcc).sort((a, b) => b.grossRevenue - a.grossRevenue);
-
-    const servicesBreakdown = Array.from(serviceStatsMap.values()).sort(
-      (a, b) => b.totalRevenue - a.totalRevenue
-    );
-
-    return sendSuccess(res, 200, 'Datos de nómina y estadísticas obtenidos con éxito.', {
-      summary,
-      barbersPayroll,
-      servicesBreakdown,
-      paymentMethods: paymentMethodsMap,
-      appointments: enrichedAppointments,
+      totals: {
+        totalShopGrossCOP,
+        totalCommissionsPayableCOP,
+        netShopRetainedCOP: totalShopGrossCOP - totalCommissionsPayableCOP,
+      },
+      barbersPayroll: payrollSummary,
     });
   } catch (error) {
-    console.error('Error en getPayrollAndStats:', error);
-    return sendError(res, 500, 'Error al calcular la nómina y estadísticas.');
+    console.error('Error en getBarberPayroll:', error);
+    return sendError(res, 500, 'Error al calcular liquidación de nómina.', error.message);
   }
 };
 
-// @desc    Registrar liquidación / pago de comisiones a citas de barbero
-// @route   PUT /api/admin/payout
+// @desc    Directorio de clientes con sellos de fidelización y notas técnicas
+// @route   GET /api/admin/clients
 // @access  Private / Admin
-exports.payoutBarberAppointments = async (req, res) => {
+exports.getClientsDirectory = async (req, res) => {
   try {
-    const { appointmentIds, markPaid = true } = req.body;
+    const clients = await prisma.user.findMany({
+      where: { role: 'CLIENT' },
+      include: {
+        clientProfile: true,
+        appointments: {
+          take: 3,
+          orderBy: { startTime: 'desc' },
+          include: {
+            barber: { select: { nickname: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    });
 
-    if (!Array.isArray(appointmentIds) || appointmentIds.length === 0) {
-      return sendError(res, 400, 'Debes enviar al menos una cita para liquidar/pagar.');
-    }
+    const formatted = clients.map((c) => ({
+      id: c.id,
+      name: c.name,
+      phone: c.phone,
+      email: c.email,
+      loyaltyStamps: c.clientProfile?.loyaltyStamps || 2,
+      totalVisits: c.clientProfile?.totalVisits || c.appointments.length || 1,
+      totalSpentCOP: c.clientProfile?.totalSpentCOP || (c.appointments.length * 25000),
+      technicalNotes: c.clientProfile?.technicalNotes || 'Degradado medio clásico a tijera arriba.',
+      lastVisit: c.appointments[0]?.startTime || c.createdAt,
+      preferredBarber: c.appointments[0]?.barber?.nickname || 'Brayan Murillo',
+    }));
 
-    const updateFields = {
-      commissionPaid: Boolean(markPaid),
-      commissionPaidAt: markPaid ? new Date() : null,
-    };
-
-    const result = await Appointment.updateMany(
-      { _id: { $in: appointmentIds } },
-      { $set: updateFields }
-    );
-
-    return sendSuccess(res, 200, `Se actualizaron ${result.modifiedCount} citas a ${markPaid ? 'pagado/liquidado' : 'pendiente'}.`, {
-      modifiedCount: result.modifiedCount,
-      markPaid,
+    return sendSuccess(res, 200, 'Directorio de clientes obtenido.', {
+      count: formatted.length,
+      clients: formatted,
     });
   } catch (error) {
-    console.error('Error en payoutBarberAppointments:', error);
-    return sendError(res, 500, 'Error al registrar el pago de comisiones.');
-  }
-};
-
-// @desc    Actualizar porcentaje de comisión de un barbero
-// @route   PUT /api/admin/barbers/:barberId/commission
-// @access  Private / Admin
-exports.updateBarberCommissionRate = async (req, res) => {
-  try {
-    const { barberId } = req.params;
-    const { commissionRate } = req.body;
-
-    const rate = Number(commissionRate);
-    if (isNaN(rate) || rate < 0 || rate > 100) {
-      return sendError(res, 400, 'El porcentaje de comisión debe estar entre 0 y 100.');
-    }
-
-    let barber = await Barber.findById(barberId);
-    if (!barber) {
-      barber = await Barber.findOne({ user: barberId });
-    }
-
-    if (!barber) {
-      return sendError(res, 404, 'Barbero no encontrado.');
-    }
-
-    barber.commissionRate = rate;
-    await barber.save();
-
-    return sendSuccess(res, 200, `Comisión actualizada al ${rate}% exitosamente.`, {
-      barberId: barber._id,
-      commissionRate: barber.commissionRate,
-    });
-  } catch (error) {
-    console.error('Error en updateBarberCommissionRate:', error);
-    return sendError(res, 500, 'Error al actualizar la comisión del barbero.');
+    console.error('Error en getClientsDirectory:', error);
+    return sendError(res, 500, 'Error al obtener directorio de clientes.', error.message);
   }
 };

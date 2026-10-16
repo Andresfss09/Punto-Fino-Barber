@@ -203,3 +203,4 @@ runTests().catch((err) => {
   console.error('Error fatal ejecutando test suite:', err);
   process.exit(1);
 });
+

@@ -195,3 +195,4 @@ class LocalDatabaseManager {
 }
 
 export const localDB = new LocalDatabaseManager();
+
