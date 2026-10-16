@@ -5,6 +5,7 @@ const {
   getMe,
   registerStaff,
   logout,
+  registerDeviceSession,
 } = require('../controllers/authController');
 const { protect, authorize } = require('../middlewares/auth');
 const { authLimiter } = require('../middlewares/rateLimit');
@@ -13,6 +14,7 @@ const { authLimiter } = require('../middlewares/rateLimit');
 router.post('/login', authLimiter, login);
 router.get('/me', protect, getMe);
 router.post('/logout', protect, logout);
+router.post('/register-device', protect, registerDeviceSession);
 
 // Registro administrativo de personal
 router.post('/register-staff', protect, authorize('ADMIN', 'SUPER_ADMIN'), registerStaff);

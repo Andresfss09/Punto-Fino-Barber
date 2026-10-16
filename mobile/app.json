@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "Punto Fino Staff",
+    "slug": "punto-fino-staff",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#111215"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.puntofino.staff",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Punto Fino utiliza Face ID para autenticar rápidamente a los barberos y abrir su agenda sin contraseñas."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#111215"
+      },
+      "package": "com.puntofino.staff",
+      "permissions": [
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Permite iniciar sesión rápidamente con Face ID en la barbería."
+        }
+      ]
+    ]
+  }
+}

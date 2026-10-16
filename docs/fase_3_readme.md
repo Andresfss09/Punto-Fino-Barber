@@ -126,3 +126,4 @@ Las capturas de pantalla de la experiencia pública de reservas y correos se enc
 - `docs/screenshots/fase_3/01_web_publica_reservar.png`
 - `docs/screenshots/fase_3/02_flujo_reserva_completo.png`
 - `docs/screenshots/fase_3/03_correo_transaccional_ics.png`
+

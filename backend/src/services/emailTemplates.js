@@ -343,3 +343,4 @@ Total: $ ${appointment.totalPriceCOP.toLocaleString('es-CO')} COP
 
   return { html, text };
 };
+

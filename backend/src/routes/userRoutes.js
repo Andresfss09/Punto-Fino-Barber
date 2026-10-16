@@ -5,24 +5,19 @@ const {
   getUserById,
   updateUser,
   deleteUser,
-  updateAvatar
+  getTechnicalNotes,
+  updateTechnicalNotes,
 } = require('../controllers/userController');
 const { protect, authorize } = require('../middlewares/auth');
-const { uploadAvatar } = require('../middlewares/upload');
-const { validateObjectId } = require('../utils/validators');
 
-// Rutas accesibles por cualquier usuario autenticado
-router.put('/avatar', protect, uploadAvatar, updateAvatar);
+// Rutas de ficha técnica para el equipo (Barberos y Admins)
+router.get('/:id/technical-notes', protect, authorize('ADMIN', 'SUPER_ADMIN', 'BARBER', 'RECEPTIONIST'), getTechnicalNotes);
+router.put('/:id/technical-notes', protect, authorize('ADMIN', 'SUPER_ADMIN', 'BARBER', 'RECEPTIONIST'), updateTechnicalNotes);
 
-// Rutas exclusivas para admin
-router.use(protect, authorize('admin'));
-
-router.route('/')
-  .get(getAllUsers);
-
-router.route('/:id')
-  .get(validateObjectId('id'), getUserById)
-  .put(validateObjectId('id'), updateUser)
-  .delete(validateObjectId('id'), deleteUser);
+// Rutas administrativas
+router.get('/', protect, authorize('ADMIN', 'SUPER_ADMIN'), getAllUsers);
+router.get('/:id', protect, authorize('ADMIN', 'SUPER_ADMIN'), getUserById);
+router.put('/:id', protect, authorize('ADMIN', 'SUPER_ADMIN'), updateUser);
+router.delete('/:id', protect, authorize('ADMIN', 'SUPER_ADMIN'), deleteUser);
 
 module.exports = router;

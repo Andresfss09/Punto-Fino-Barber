@@ -64,3 +64,4 @@ exports.generateICS = (appointment, client, barber, services) => {
 
   return icsContent;
 };
+

@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const prisma = require('../config/prisma');
 const { generateToken, generateRandomToken, sendSuccess, sendError } = require('../utils/helpers');
@@ -7,14 +8,20 @@ const { generateToken, generateRandomToken, sendSuccess, sendError } = require('
 // @access  Public
 exports.login = async (req, res) => {
   try {
-    const { email, password, deviceId, deviceName } = req.body;
+    const emailOrPhone = req.body.email || req.body.phoneOrEmail;
+    const { password, deviceId, deviceName } = req.body;
 
-    if (!email || !password) {
-      return sendError(res, 400, 'Por favor ingresá tu correo y contraseña.');
+    if (!emailOrPhone || !password) {
+      return sendError(res, 400, 'Por favor ingresá tu correo o teléfono y contraseña.');
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: emailOrPhone.toLowerCase() },
+          { phone: emailOrPhone },
+        ],
+      },
       include: {
         barberProfile: true,
       },
@@ -168,5 +175,54 @@ exports.logout = async (req, res) => {
   } catch (error) {
     console.error(error);
     return sendError(res, 500, 'Error al cerrar sesión.');
+  }
+};
+
+// @desc    Registrar dispositivo móvil del barbero o administrador (Biometría / Huella / FaceID)
+// @route   POST /api/auth/register-device
+// @access  Private
+exports.registerDeviceSession = async (req, res) => {
+  try {
+    const { deviceId, deviceName, biometricsEnabled = false } = req.body;
+    if (!deviceId) return sendError(res, 400, 'deviceId es obligatorio');
+
+    const refreshToken = crypto.randomBytes(32).toString('hex');
+    const refreshTokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+
+    const session = await prisma.staffDeviceSession.upsert({
+      where: {
+        userId_deviceId: {
+          userId: req.user.id,
+          deviceId,
+        },
+      },
+      update: {
+        deviceName: deviceName || 'Dispositivo Móvil de Barbería',
+        refreshTokenHash,
+        biometricsEnabled: Boolean(biometricsEnabled),
+        isRevoked: false,
+        lastActiveAt: new Date(),
+      },
+      create: {
+        userId: req.user.id,
+        deviceId,
+        deviceName: deviceName || 'Dispositivo Móvil de Barbería',
+        refreshTokenHash,
+        biometricsEnabled: Boolean(biometricsEnabled),
+      },
+    });
+
+    return sendSuccess(res, 200, 'Dispositivo móvil vinculado exitosamente con biometría.', {
+      session: {
+        deviceId: session.deviceId,
+        deviceName: session.deviceName,
+        biometricsEnabled: session.biometricsEnabled,
+        lastActiveAt: session.lastActiveAt,
+      },
+      refreshToken,
+    });
+  } catch (error) {
+    console.error('Error al registrar dispositivo:', error);
+    return sendError(res, 500, 'Error al vincular dispositivo móvil.');
   }
 };

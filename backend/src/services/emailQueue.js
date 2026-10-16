@@ -344,3 +344,4 @@ class EmailQueue {
 // Instancia singleton
 const emailQueue = new EmailQueue();
 module.exports = emailQueue;
+

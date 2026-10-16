@@ -6,3 +6,4 @@ const { handleResendWebhook } = require('../controllers/webhookController');
 router.post('/resend', handleResendWebhook);
 
 module.exports = router;
+

@@ -193,3 +193,106 @@ exports.getBarberAvailability = async (req, res) => {
     return sendError(res, 500, 'Error al calcular la disponibilidad del barbero.');
   }
 };
+
+// @desc    Obtener resumen del día para la app móvil del barbero (Citas, en silla, comisión)
+// @route   GET /api/barbers/me/daily-summary
+// @access  Private (Staff)
+exports.getBarberDailySummary = async (req, res) => {
+  try {
+    let barberProfile = req.user.barberProfile;
+    if (!barberProfile) {
+      if (req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN') {
+        barberProfile = await prisma.barberProfile.findFirst({
+          where: { isActive: true },
+          include: { user: true },
+        });
+      }
+    }
+
+    if (!barberProfile) {
+      return sendError(res, 404, 'Perfil de barbero no encontrado.');
+    }
+
+    const now = new Date();
+    const startOfDay = new Date(now);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(now);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const appointments = await prisma.appointment.findMany({
+      where: {
+        barberId: barberProfile.id,
+        startTime: { gte: startOfDay, lte: endOfDay },
+      },
+      orderBy: { startTime: 'asc' },
+      include: {
+        client: {
+          include: {
+            clientProfile: true,
+          },
+        },
+        items: {
+          include: { service: true },
+        },
+      },
+    });
+
+    const inChair = appointments.find((a) => a.status === 'IN_PROGRESS');
+    const completed = appointments.filter((a) => a.status === 'COMPLETED');
+    const upcoming = appointments.filter((a) => a.status === 'CONFIRMED');
+
+    const totalServicesCOP = completed.reduce((sum, a) => sum + a.totalPriceCOP, 0);
+    const commissionRate = Number(barberProfile.commissionRate) || 0.5;
+    const commissionCOP = Math.round(totalServicesCOP * commissionRate);
+
+    let inChairMinutes = 0;
+    if (inChair) {
+      inChairMinutes = Math.max(0, Math.floor((now.getTime() - new Date(inChair.startTime).getTime()) / 60000));
+    }
+
+    return sendSuccess(res, 200, 'Resumen del día del barbero.', {
+      date: now.toISOString().split('T')[0],
+      barber: {
+        id: barberProfile.id,
+        nickname: barberProfile.nickname,
+        name: req.user.name,
+        commissionRate,
+      },
+      stats: {
+        totalAppointments: appointments.length,
+        completedCount: completed.length,
+        upcomingCount: upcoming.length,
+        hasInChair: Boolean(inChair),
+        totalServicesCOP,
+        commissionCOP, // [REVISAR CON CONTADOR / ABOGADO LABORAL: 50% honorarios independientes]
+      },
+      inChair: inChair ? {
+        id: inChair.id,
+        bookingCode: inChair.bookingCode,
+        clientName: inChair.client.name,
+        clientPhone: inChair.client.phone,
+        serviceNames: inChair.items.map((i) => i.service.name).join(' + '),
+        totalPriceCOP: inChair.totalPriceCOP,
+        technicalNotes: inChair.client.clientProfile?.technicalNotes || inChair.barberNotes,
+        startTime: inChair.startTime,
+        inChairMinutes,
+      } : null,
+      appointments: appointments.map((a) => ({
+        id: a.id,
+        bookingCode: a.bookingCode,
+        clientName: a.client.name,
+        clientPhone: a.client.phone,
+        serviceNames: a.items.map((i) => i.service.name).join(' + '),
+        totalPriceCOP: a.totalPriceCOP,
+        status: a.status,
+        isWalkIn: a.isWalkIn,
+        startTime: a.startTime,
+        endTime: a.endTime,
+        technicalNotes: a.client.clientProfile?.technicalNotes || a.barberNotes,
+      })),
+    });
+  } catch (error) {
+    console.error('Error en daily summary:', error);
+    return sendError(res, 500, 'Error al obtener resumen diario.');
+  }
+};

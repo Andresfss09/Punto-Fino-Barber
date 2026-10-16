@@ -479,9 +479,237 @@ exports.updateStatus = async (req, res) => {
       data: { status },
     });
 
+    const io = req.app?.get?.('io');
+    if (io) {
+      io.emit('appointment:status_changed', { appointmentId: id, status });
+    }
+
     return sendSuccess(res, 200, `Estado actualizado a ${status}.`, { appointment: updated });
   } catch (error) {
     console.error(error);
     return sendError(res, 500, 'Error al actualizar el estado de la cita.');
+  }
+};
+
+// @desc    Registro rápido de cliente sin cita en la app móvil (Walk-in en 2 toques)
+// @route   POST /api/appointments/walk-in
+// @access  Private (Staff: ADMIN, BARBER, RECEPTIONIST)
+exports.createWalkInAppointment = async (req, res) => {
+  try {
+    const {
+      clientName,
+      clientPhone,
+      serviceIds,
+      barberId: paramBarberId,
+      barberNotes,
+    } = req.body;
+
+    if (!clientName || !serviceIds || !serviceIds.length) {
+      return sendError(res, 400, 'Nombre del cliente y al menos un servicio son requeridos.');
+    }
+
+    // Si quien llama es barbero, asignar automáticamente a su silla
+    let barberId = paramBarberId;
+    if (req.user.role === 'BARBER') {
+      if (!req.user.barberProfile) {
+        return sendError(res, 403, 'Perfil de barbero no encontrado.');
+      }
+      barberId = req.user.barberProfile.id;
+    }
+
+    if (!barberId) {
+      return sendError(res, 400, 'Debe especificar el barbero que atiende.');
+    }
+
+    const services = await prisma.service.findMany({
+      where: { id: { in: serviceIds } },
+    });
+
+    if (services.length !== serviceIds.length) {
+      return sendError(res, 400, 'Uno o varios servicios no fueron encontrados.');
+    }
+
+    const totalDurationMin = services.reduce((acc, s) => acc + s.durationMinutes, 0);
+    const totalPriceCOP = services.reduce((acc, s) => acc + s.priceCOP, 0);
+
+    const start = new Date();
+    const end = new Date(start.getTime() + totalDurationMin * 60 * 1000);
+
+    // Formatear teléfono o crear usuario walk-in
+    let cleanPhone = clientPhone ? clientPhone.replace(/\D/g, '') : '';
+    if (cleanPhone.length === 10) cleanPhone = `+57${cleanPhone}`;
+    else if (!cleanPhone) cleanPhone = `+57300${Math.floor(1000000 + Math.random() * 9000000)}`;
+
+    const bookingCode = generateBookingCode();
+
+    const appointment = await prisma.$transaction(async (tx) => {
+      let clientUser = await tx.user.findUnique({ where: { phone: cleanPhone } });
+      if (!clientUser) {
+        clientUser = await tx.user.create({
+          data: {
+            phone: cleanPhone,
+            name: clientName,
+            role: 'CLIENT',
+            clientProfile: {
+              create: {
+                preferredBarberId: barberId,
+                technicalNotes: barberNotes || null,
+              },
+            },
+          },
+        });
+      } else if (barberNotes) {
+        await tx.clientProfile.updateMany({
+          where: { userId: clientUser.id },
+          data: { technicalNotes: barberNotes },
+        });
+      }
+
+      return tx.appointment.create({
+        data: {
+          bookingCode,
+          clientId: clientUser.id,
+          barberId,
+          startTime: start,
+          endTime: end,
+          totalDurationMin,
+          totalPriceCOP,
+          status: 'IN_PROGRESS', // Entra directo a la silla
+          isWalkIn: true,
+          barberNotes: barberNotes || null,
+          items: {
+            create: services.map((s) => ({
+              serviceId: s.id,
+              priceCOP: s.priceCOP,
+              durationMinutes: s.durationMinutes,
+            })),
+          },
+        },
+        include: {
+          client: { select: { id: true, name: true, phone: true } },
+          barber: { select: { id: true, nickname: true, user: { select: { name: true } } } },
+          items: { include: { service: true } },
+        },
+      });
+    });
+
+    const io = req.app?.get?.('io');
+    if (io) {
+      io.emit('appointment:walk_in_created', appointment);
+    }
+
+    return sendSuccess(res, 201, 'Cliente walk-in sentado en silla con éxito.', { appointment });
+  } catch (error) {
+    console.error('Error en walk-in:', error);
+    return sendError(res, 500, 'Error al registrar cliente sin cita.');
+  }
+};
+
+// @desc    Cobro y liquidación de servicio en silla (POS Móvil)
+// @route   POST /api/appointments/:id/checkout
+// @access  Private (Staff: ADMIN, BARBER)
+exports.checkoutAppointment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      paymentMethod = 'EFECTIVO',
+      tipsCOP = 0,
+      barberNotes,
+    } = req.body;
+
+    const appointment = await prisma.appointment.findUnique({
+      where: { id },
+      include: {
+        barber: true,
+        client: { include: { clientProfile: true } },
+      },
+    });
+
+    if (!appointment) {
+      return sendError(res, 404, 'Cita no encontrada.');
+    }
+
+    const tip = Math.max(0, parseInt(tipsCOP, 10) || 0);
+    const totalCollectedCOP = appointment.totalPriceCOP + tip;
+
+    // Calcular comisión del barbero (50% de servicios + 100% propinas)
+    // NOTA: REVISAR CON CONTADOR / ABOGADO LABORAL
+    const commissionRate = Number(appointment.barber.commissionRate) || 0.5;
+    const commissionCOP = Math.round(appointment.totalPriceCOP * commissionRate);
+
+    // Actualizar cita y notas técnicas del cliente en transacción
+    const updated = await prisma.$transaction(async (tx) => {
+      if (barberNotes && appointment.client.clientProfile) {
+        await tx.clientProfile.update({
+          where: { id: appointment.client.clientProfile.id },
+          data: {
+            technicalNotes: barberNotes,
+            totalVisits: { increment: 1 },
+            totalSpentCOP: { increment: appointment.totalPriceCOP },
+            loyaltyStamps: { increment: 1 },
+          },
+        });
+      }
+
+      // Buscar sesión de caja activa hoy
+      const activeSession = await tx.cashSession.findFirst({
+        where: { closedAt: null },
+        orderBy: { openedAt: 'desc' },
+      });
+
+      if (activeSession) {
+        await tx.cashTransaction.create({
+          data: {
+            cashSessionId: activeSession.id,
+            appointmentId: appointment.id,
+            type: 'INGRESO_SERVICIO',
+            paymentMethod: paymentMethod,
+            amountCOP: totalCollectedCOP,
+            description: `Cobro en silla - Cita [${appointment.bookingCode}] (${paymentMethod})`,
+          },
+        });
+      }
+
+      return tx.appointment.update({
+        where: { id: appointment.id },
+        data: {
+          status: 'COMPLETED',
+          barberNotes: barberNotes || appointment.barberNotes,
+        },
+        include: {
+          client: true,
+          barber: true,
+          items: { include: { service: true } },
+        },
+      });
+    });
+
+    const io = req.app?.get?.('io');
+    if (io) {
+      io.emit('appointment:checkout_completed', {
+        appointmentId: updated.id,
+        bookingCode: updated.bookingCode,
+        totalCollectedCOP,
+        paymentMethod,
+        commissionCOP,
+      });
+    }
+
+    return sendSuccess(res, 200, 'Servicio cobrado exitosamente.', {
+      appointment: updated,
+      receipt: {
+        bookingCode: updated.bookingCode,
+        clientName: updated.client.name,
+        servicesTotalCOP: updated.totalPriceCOP,
+        tipsCOP: tip,
+        totalCollectedCOP,
+        paymentMethod,
+        commissionEarnedCOP: commissionCOP,
+        paidAt: new Date(),
+      },
+    });
+  } catch (error) {
+    console.error('Error en checkout:', error);
+    return sendError(res, 500, 'Error al procesar el cobro en silla.');
   }
 };
