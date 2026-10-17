@@ -2,13 +2,13 @@
  * PRUEBAS DE INTEGRACIÓN FASE 5: PANEL WEB DE ADMINISTRACIÓN & RECEPCIÓN/CAJA
  * 
  * Verifica contra Neon PostgreSQL:
- * 1. Autenticación de Administrador (Alberto Cardona).
+ * 1. Autenticación de Administrador (Juan David).
  * 2. Consulta de Tablero General & KPIs (GET /api/admin/overview).
- * 3. Estado Multi-Silla en tiempo real (Sillas 1 a 4).
+ * 3. Estado Multi-Silla en tiempo real (3 sillas activas).
  * 4. Reasignación de cita entre barberos con auditoría (POST /api/admin/reassign-appointment).
  * 5. Apertura de Caja Diaria con base en efectivo (POST /api/admin/cash/open).
  * 6. Consulta en vivo de Arqueo de Caja y Canales de Pago (GET /api/admin/cash/current).
- * 7. Inventario de Insumos & Pomadas con alertas de stock mínimo (GET /api/admin/inventory).
+ * 7. Inventario de Productos Rolda y Nevera con alertas de stock mínimo (GET /api/admin/inventory).
  * 8. Registro de movimiento de inventario (POST /api/admin/inventory/movement).
  * 9. Nómina de barberos y liquidación 50% con disclaimer legal (GET /api/admin/payroll).
  * 10. Directorio de clientes con sellos de fidelización y notas (GET /api/admin/clients).
@@ -32,7 +32,7 @@ async function runPhase5Tests() {
 
   try {
     // 1. Autenticación del Administrador
-    console.log('👉 1. Autenticando Administrador (Alberto Cardona)...');
+    console.log('👉 1. Autenticando Administrador (Juan David)...');
     const loginRes = await axios.post(`${API_BASE}/auth/login`, {
       identifier: 'admin@puntofino.com',
       password: 'PuntoFino2026!',
@@ -61,41 +61,39 @@ async function runPhase5Tests() {
     }
 
     // 3. Estado Multi-Silla en tiempo real
-    console.log('\n👉 3. Verificando Estado de las 4 Sillas en Tiempo Real...');
+    console.log('\n👉 3. Verificando Estado de las 3 Sillas en Tiempo Real...');
     const chairStatus = overviewRes.data.chairStatus;
     if (chairStatus && chairStatus.length >= 3) {
       console.log(`✅ [PASS] 3. Sillas de barberos monitoreadas (${chairStatus.length} activas):`);
       chairStatus.forEach((ch) => {
         console.log(`   - Silla #${ch.chairNumber}: ${ch.nickname} (${ch.status}) · $ ${ch.todayRevenueCOP.toLocaleString('es-CO')} producidos`);
       });
-      targetBarberId = chairStatus[1].barberId; // Carlos Valencia
+      targetBarberId = chairStatus[1].barberId; // Emanuel Torres
     } else {
       throw new Error('Sillas no reportadas en el estado general.');
     }
 
     // 4. Reasignación de Cita con Auditoría
     console.log('\n👉 4. Reasignando cita de un barbero a otro (POST /api/admin/reassign-appointment)...');
-    // Buscar una cita existente o crear una para la prueba
-    let apt = await prisma.appointment.findFirst({
-      where: { status: { in: ['CONFIRMED', 'HOLD'] } },
+    await prisma.appointment.deleteMany({ where: { bookingCode: { startsWith: 'PF-REASIGN' } } });
+    const client = await prisma.user.findFirst({ where: { role: 'CLIENT' } });
+    const firstBarber = await prisma.barberProfile.findFirst({ where: { isActive: true, nickname: 'Juan David' } });
+    const sampleService = await prisma.service.findFirst({ where: { isActive: true } });
+    // Jueves futuro no ocupado donde ningún barbero está en descanso
+    const futureThursday = new Date('2026-11-26T19:00:00.000Z');
+    const apt = await prisma.appointment.create({
+      data: {
+        bookingCode: `PF-REASIGN-${Math.floor(1000 + Math.random() * 9000)}`,
+        clientId: client.id,
+        barberId: firstBarber.id,
+        serviceId: sampleService.id,
+        startTime: futureThursday,
+        endTime: new Date(futureThursday.getTime() + 40 * 60000),
+        totalDurationMin: 40,
+        totalPriceCOP: 22000,
+        status: 'CONFIRMED',
+      },
     });
-
-    if (!apt) {
-      const client = await prisma.user.findFirst({ where: { role: 'CLIENT' } });
-      const firstBarber = await prisma.barberProfile.findFirst({ where: { isActive: true } });
-      apt = await prisma.appointment.create({
-        data: {
-          bookingCode: `PF-REASIGN-${Math.floor(1000 + Math.random() * 9000)}`,
-          clientId: client.id,
-          barberId: firstBarber.id,
-          startTime: new Date(Date.now() + 3600000),
-          endTime: new Date(Date.now() + 6000000),
-          totalDurationMin: 40,
-          totalPriceCOP: 25000,
-          status: 'CONFIRMED',
-        },
-      });
-    }
     testAppointmentId = apt.id;
 
     const reassignRes = await axios.post(
@@ -110,7 +108,6 @@ async function runPhase5Tests() {
 
     if (reassignRes.data?.success) {
       console.log('✅ [PASS] 4. Cita reasignada con éxito a nuevo barbero.');
-      // Verificar AuditLog
       const audit = await prisma.auditLog.findFirst({
         where: { resourceId: testAppointmentId, action: 'CITA_REASIGNADA' },
       });
@@ -125,7 +122,7 @@ async function runPhase5Tests() {
     console.log('\n👉 5. Apertura de Caja Diaria (POST /api/admin/cash/open)...');
     const openCashRes = await axios.post(
       `${API_BASE}/admin/cash/open`,
-      { openingBalanceCOP: 100000, notes: 'Base inicial de gaveta turno matutino' },
+      { openingBalanceCOP: 100000, notes: 'Base inicial de gaveta jornada matutina' },
       authHeaders
     );
     if (openCashRes.data?.success) {
@@ -148,7 +145,7 @@ async function runPhase5Tests() {
       throw new Error('Fallo al consultar arqueo de caja actual.');
     }
 
-    // 7. Inventario de Insumos y Pomadas con Alertas
+    // 7. Inventario de Productos Rolda y Nevera con Alertas
     console.log('\n👉 7. Consultando Inventario y Alertas de Stock (GET /api/admin/inventory)...');
     const invRes = await axios.get(`${API_BASE}/admin/inventory`, authHeaders);
     if (invRes.data?.success && invRes.data?.products?.length > 0) {
@@ -200,7 +197,7 @@ async function runPhase5Tests() {
     if (clientsRes.data?.success && clientsRes.data?.clients?.length > 0) {
       console.log(`✅ [PASS] 10. Directorio obtenido: ${clientsRes.data.count} clientes.`);
       const c = clientsRes.data.clients[0];
-      console.log(`   - Cliente: ${c.name} (${c.phone}) · Sellos: ${c.loyaltyStamps}/6 · Nota: "${c.technicalNotes}"`);
+      console.log(`   - Cliente: ${c.name} (${c.email}) · Sellos: ${c.loyaltyStamps}/6 · Nota: "${c.technicalNotes}"`);
     } else {
       throw new Error('Fallo al obtener directorio de clientes.');
     }
@@ -211,7 +208,7 @@ async function runPhase5Tests() {
       `${API_BASE}/admin/cash/close`,
       {
         physicalCashCountedCOP: 190000,
-        notes: 'Cierre de turno verificado por Alberto Cardona',
+        notes: 'Cierre de jornada verificado por Juan David',
       },
       authHeaders
     );
@@ -237,4 +234,3 @@ async function runPhase5Tests() {
 }
 
 runPhase5Tests();
-

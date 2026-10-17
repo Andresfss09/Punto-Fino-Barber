@@ -1,60 +1,129 @@
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
+const { OFFICIAL_SCHEDULES, OFFICIAL_PRODUCTS } = require('../config/businessConfig');
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('💈 Iniciando siembra de datos maestros para Punto Fino (Cali, Colombia)...');
+  console.log('💈 Iniciando siembra de datos maestros para Punto Fino — Ronda 2 (Villacolombia, Cali)...');
 
-  // Limpiar datos previos si existen (orden respetando llaves foráneas)
+  // 1. Limpiar registros previos en orden seguro de llaves foráneas
   console.log('🧹 Limpiando registros antiguos...');
+  await prisma.panelNotification.deleteMany({});
+  await prisma.emailVerificationCode.deleteMany({});
+  await prisma.contactMessage.deleteMany({});
   await prisma.emailAuditLog.deleteMany({});
   await prisma.slotHold.deleteMany({});
   await prisma.cashTransaction.deleteMany({});
   await prisma.cashSession.deleteMany({});
+  await prisma.appointmentProduct.deleteMany({});
   await prisma.appointmentItem.deleteMany({});
   await prisma.appointment.deleteMany({});
   await prisma.barberAbsence.deleteMany({});
   await prisma.barberSchedule.deleteMany({});
+  await prisma.commissionSettlement.deleteMany({});
   await prisma.barberProfile.deleteMany({});
   await prisma.clientProfile.deleteMany({});
   await prisma.habeasDataConsent.deleteMany({});
+  await prisma.inventoryMovement.deleteMany({});
   await prisma.service.deleteMany({});
   await prisma.product.deleteMany({});
+  await prisma.scheduleException.deleteMany({});
+  await prisma.businessSchedule.deleteMany({});
+  await prisma.staffDeviceSession.deleteMany({});
+  await prisma.auditLog.deleteMany({});
   await prisma.user.deleteMany({});
+
+  // 2. Habilitar extensión btree_gist y constraints de exclusión en PostgreSQL (Neon)
+  console.log('🛡️ Configurando constraints de exclusión btree_gist en PostgreSQL...');
+  await prisma.$executeRawUnsafe(`CREATE EXTENSION IF NOT EXISTS btree_gist;`);
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "Appointment" DROP CONSTRAINT IF EXISTS "no_overlapping_barber_appointments";
+  `);
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "Appointment"
+    ADD CONSTRAINT "no_overlapping_barber_appointments"
+    EXCLUDE USING gist (
+      "barberId" WITH =,
+      tsrange("startTime", "endTime", '[)') WITH &&
+    )
+    WHERE ("status" NOT IN ('CANCELLED', 'NO_SHOW'));
+  `);
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "Appointment" DROP CONSTRAINT IF EXISTS "no_overlapping_client_appointments";
+  `);
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "Appointment"
+    ADD CONSTRAINT "no_overlapping_client_appointments"
+    EXCLUDE USING gist (
+      "clientId" WITH =,
+      tsrange("startTime", "endTime", '[)') WITH &&
+    )
+    WHERE ("status" NOT IN ('CANCELLED', 'NO_SHOW'));
+  `);
+  console.log('✅ Constraints anti-solapamiento (barbero y cliente) activos en Neon PostgreSQL.');
+
+  // 3. Configurar ajustes de plataforma
+  await prisma.platformSetting.upsert({
+    where: { id: 'default' },
+    update: {
+      cancellationWindowHours: 3,
+      minAdvanceMinutes: 30,
+      bufferMinutes: 0,
+      maxActiveBookingsPerClient: 2,
+      allowClientProductAddOn: true,
+      adminNotificationEmails: 'admin@puntofino.com',
+      holidayNote: 'Los días festivos abrimos en jornada de domingo (9:00 a. m. a 4:00 p. m.).',
+    },
+    create: {
+      id: 'default',
+      cancellationWindowHours: 3,
+      minAdvanceMinutes: 30,
+      bufferMinutes: 0,
+      maxActiveBookingsPerClient: 2,
+      allowClientProductAddOn: true,
+      adminNotificationEmails: 'admin@puntofino.com',
+      holidayNote: 'Los días festivos abrimos en jornada de domingo (9:00 a. m. a 4:00 p. m.).',
+    },
+  });
+
+  // 4. Sembrar los 7 Horarios Oficiales del Negocio
+  console.log('🕒 Sembrando horarios oficiales de Punto Fino (7 días de la semana)...');
+  for (const sched of OFFICIAL_SCHEDULES) {
+    await prisma.businessSchedule.create({
+      data: {
+        dayOfWeek: sched.dayOfWeek,
+        dayName: sched.dayName,
+        openTime: sched.openTime,
+        closeTime: sched.closeTime,
+        isOpen: sched.isOpen,
+      },
+    });
+  }
 
   const passwordHash = await bcrypt.hash('PuntoFino2026!', 10);
   const barberPasswordHash = await bcrypt.hash('Barbero2026!', 10);
 
-  // 1. Crear Administrador General
-  console.log('👤 Creando usuario Administrador...');
-  const adminUser = await prisma.user.create({
-    data: {
-      email: 'admin@puntofino.com',
-      phone: '+573001234567',
-      name: 'Alberto Cardona',
-      passwordHash,
-      role: 'ADMIN',
-      isActive: true,
-    },
-  });
-
-  // 2. Crear los 3 Barberos Reales de Punto Fino (Sin fotos de perfil)
-  // Juan David: Barbero y Admin
-  console.log('✂️ Creando equipo de 3 barberos de Punto Fino...');
+  // 5. Crear los 3 Barberos Oficiales (Juan David: Fundador con Doble Rol Admin + Barbero)
+  // - Juan David: Descansa miércoles (dayOfWeek = 3), rol ADMIN + BarberProfile (Fundador de Punto Fino)
+  // - Emanuel Torres: Descansa lunes (dayOfWeek = 1), rol BARBER
+  // - Juan Diego: Descansa martes (dayOfWeek = 2), rol BARBER
+  console.log('✂️ Creando equipo oficial (Juan David como Administrador y Barbero)...');
   const juanDavidUser = await prisma.user.create({
     data: {
       email: 'juandavid@puntofino.com',
-      phone: '+573158294012',
       name: 'Juan David',
       passwordHash: barberPasswordHash,
-      role: 'ADMIN', // Barbero y Admin
+      role: 'ADMIN', // Rol dual: Administrador y Barbero
       isActive: true,
       barberProfile: {
         create: {
-          nickname: 'Juan David "El Fino"',
-          bio: 'Fundador de Punto Fino, barbero y administrador. Especialista en corte clásico, degradados de precisión y gestión integral.',
+          nickname: 'Juan David',
+          bio: 'Fundador de Punto Fino, barbero y administrador. Especialista en corte clásico, degradados de precisión y cuidado integral.',
+          weeklyRestDay: 3, // Miércoles
+          commissionScheme: 'PERCENTAGE',
           commissionRate: 0.50,
+          productCommissionRate: 0.15,
           sortOrder: 1,
         },
       },
@@ -62,20 +131,21 @@ async function main() {
     include: { barberProfile: true },
   });
 
-  // Emanuel Torres: Barbero
   const emanuelUser = await prisma.user.create({
     data: {
       email: 'emanuel@puntofino.com',
-      phone: '+573167489201',
       name: 'Emanuel Torres',
       passwordHash: barberPasswordHash,
       role: 'BARBER',
       isActive: true,
       barberProfile: {
         create: {
-          nickname: 'Emanuel Torres "El Primo"',
+          nickname: 'Emanuel Torres',
           bio: 'Barbero profesional con maestría en corte, ritual de barba con toalla caliente y vapor de ozono.',
+          weeklyRestDay: 1, // Lunes
+          commissionScheme: 'PERCENTAGE',
           commissionRate: 0.50,
+          productCommissionRate: 0.15,
           sortOrder: 2,
         },
       },
@@ -83,20 +153,21 @@ async function main() {
     include: { barberProfile: true },
   });
 
-  // Juan Diego: Barbero
   const juanDiegoUser = await prisma.user.create({
     data: {
       email: 'juandiego@puntofino.com',
-      phone: '+573189204712',
       name: 'Juan Diego',
       passwordHash: barberPasswordHash,
       role: 'BARBER',
       isActive: true,
       barberProfile: {
         create: {
-          nickname: 'Juan Diego "Junior"',
-          bio: 'Barbero máster con amplia trayectoria en cortes a tijera, perfilado milimétrico y asesoría de estilo.',
+          nickname: 'Juan Diego',
+          bio: 'Dedicado al oficio del corte masculino y la precisión a tijera y máquina.',
+          weeklyRestDay: 2, // Martes
+          commissionScheme: 'PERCENTAGE',
           commissionRate: 0.50,
+          productCommissionRate: 0.15,
           sortOrder: 3,
         },
       },
@@ -104,174 +175,202 @@ async function main() {
     include: { barberProfile: true },
   });
 
-  // Usuario alias para compatibilidad retroactiva con test suites anteriores
-  await prisma.user.create({
-    data: {
-      email: 'brayan@puntofino.com',
-      phone: '+573159990000',
-      name: 'Juan David (Alias Móvil)',
-      passwordHash: barberPasswordHash,
-      role: 'ADMIN',
-      isActive: true,
-    },
-  });
+  // Crear horarios semanales para cada barbero respetando horarios oficiales y su día de descanso
+  const barberProfiles = [
+    juanDavidUser.barberProfile,
+    emanuelUser.barberProfile,
+    juanDiegoUser.barberProfile,
+  ];
 
-  const barbers = [juanDavidUser.barberProfile, emanuelUser.barberProfile, juanDiegoUser.barberProfile];
-
-  // 3. Crear Horarios de Atención para cada Barbero (Lunes a Domingo)
-  console.log('⏰ Asignando horarios de atención...');
-  for (const b of barbers) {
-    for (let day = 0; day <= 6; day++) {
+  for (const bp of barberProfiles) {
+    for (const sched of OFFICIAL_SCHEDULES) {
       await prisma.barberSchedule.create({
         data: {
-          barberId: b.id,
-          dayOfWeek: day,
-          startTime: day === 0 ? '09:00' : '09:00', // Domingo 09:00 AM
-          endTime: day === 0 ? '16:00' : '20:30',   // Domingo cierra 04:00 PM, Mar-Sáb 08:30 PM
-          isWorking: day !== 1, // Lunes descanso
+          barberId: bp.id,
+          dayOfWeek: sched.dayOfWeek,
+          startTime: sched.openTime,
+          endTime: sched.closeTime,
+          isWorking: sched.dayOfWeek !== bp.weeklyRestDay,
         },
       });
     }
   }
 
-  // 4. Crear Catálogo Oficial de Servicios de Punto Fino
-  // Todos los barberos ofrecen todos los servicios sin distinción ni especialidades
-  console.log('📋 Creando catálogo oficial de servicios en COP...');
-  const s1 = await prisma.service.create({
+  // 7. Catálogo Oficial de Servicios (Un solo servicio por reserva)
+  console.log('💈 Creando catálogo oficial de servicios...');
+  const srvExpPF = await prisma.service.create({
     data: {
-      name: 'Experiencia Punto Fino (Corte Clásico + Cejas)',
-      slug: 'experiencia-punto-fino',
-      description: 'Descubre nuestro servicio de Corte y Ceja, una experiencia de 35 min con degradado a navaja y cerquillo limpio.',
+      name: 'Experiencia Punto Fino (Corte + Cejas)',
+      slug: 'experiencia-punto-fino-corte-cejas',
+      description: 'Degradado a navaja milimétrico, perfilado de cerquillo, diseño y limpieza de cejas con acabado profesional.',
       durationMinutes: 35,
       priceCOP: 24000,
+      isPopular: true,
+      badgeLabel: 'Popular',
       category: 'Cortes',
       sortOrder: 1,
     },
   });
 
-  const s2 = await prisma.service.create({
+  const srvExpPFBarba = await prisma.service.create({
     data: {
       name: 'Experiencia Punto Fino + Ritual de Barba',
       slug: 'experiencia-punto-fino-ritual-barba',
-      description: 'EXPERIENCIA FINO + RITUAL DE BARBA. Corte de cabello, alineación de cejas y ritual completo de barba con toalla al vapor.',
+      description: 'Corte completo con perfilado de cerquillo y cejas, combinado con ritual de barba, toalla caliente y aceites.',
       durationMinutes: 45,
       priceCOP: 34000,
+      isPopular: true,
+      badgeLabel: 'Popular',
       category: 'Combos',
       sortOrder: 2,
     },
   });
 
-  const s3 = await prisma.service.create({
+  const srvPlatinium = await prisma.service.create({
     data: {
-      name: 'Experiencia Platinium',
-      slug: 'experiencia-platinium',
-      description: 'Experiencia total de lujo: corte personalizado, cejas, ritual completo de barba con vapor de ozono, exfoliación y mascarilla facial.',
+      name: 'Experiencia Platinium (VIP Todo Incluido)',
+      slug: 'experiencia-platinium-vip',
+      description: 'Servicio VIP integral: corte a tijera o degradado, ritual completo de barba, perfilado de cejas y exfoliación.',
       durationMinutes: 60,
       priceCOP: 55000,
+      isPopular: false,
+      badgeLabel: null,
       category: 'Combos',
       sortOrder: 3,
     },
   });
 
-  const s4 = await prisma.service.create({
+  const srvBarba = await prisma.service.create({
     data: {
       name: 'Ritual de Barba',
       slug: 'ritual-de-barba',
-      description: 'RITUAL DE BARBA con toalla caliente, aceite hidratante artesanal y perfilado a navaja de un solo filo.',
+      description: 'Toalla caliente aromatizada, vapor de ozono, perfilado a navaja tradicional y bálsamo hidratante.',
       durationMinutes: 25,
       priceCOP: 12000,
+      isPopular: false,
+      badgeLabel: null,
       category: 'Barba',
       sortOrder: 4,
     },
   });
 
-  const s5 = await prisma.service.create({
+  const srvCejas = await prisma.service.create({
     data: {
       name: 'Cejas',
-      slug: 'cejas',
-      description: 'Alineación y limpieza milimétrica de cejas con cuchilla descartable esterilizada.',
+      slug: 'cejas-punto-fino',
+      description: 'Limpieza, diseño milimétrico y perfilado con navaja fina para resaltar la mirada con precisión.',
       durationMinutes: 15,
       priceCOP: 5000,
+      isPopular: false,
+      badgeLabel: null,
       category: 'Faciales',
       sortOrder: 5,
     },
   });
 
-  // 5. Crear Productos Oficiales de Barbería
-  console.log('🧴 Creando inventario de productos oficiales...');
-  await prisma.product.createMany({
-    data: [
-      { name: 'Rolda Gel Black', brand: 'Rolda', priceCOP: 25000, costCOP: 15000, stock: 16, minStock: 5 },
-      { name: 'Rolda Curl Crem', brand: 'Rolda', priceCOP: 36000, costCOP: 22000, stock: 12, minStock: 4 },
-      { name: 'Rolda Spiderwax', brand: 'Rolda', priceCOP: 34000, costCOP: 20000, stock: 14, minStock: 4 },
-      { name: 'Rolda Aqua Wax', brand: 'Rolda', priceCOP: 34000, costCOP: 20000, stock: 18, minStock: 4 },
-      { name: 'Rolda Gel Wax', brand: 'Rolda', priceCOP: 34000, costCOP: 20000, stock: 15, minStock: 4 },
-      { name: 'Jugo Hit', brand: 'Postobón', priceCOP: 5000, costCOP: 2500, stock: 24, minStock: 8 },
-      { name: 'Cerveza Águila Latón', brand: 'Bavaria', priceCOP: 6000, costCOP: 3200, stock: 20, minStock: 6 },
-      { name: 'Agua', brand: 'Cristal', priceCOP: 3000, costCOP: 1200, stock: 30, minStock: 10 },
-    ],
-  });
+  // 8. Catálogo Oficial de Productos ("Lo que usamos contigo": Rolda & Nevera)
+  console.log('🧴 Sembrando los 8 productos oficiales (Rolda & Nevera)...');
+  for (const prod of OFFICIAL_PRODUCTS) {
+    await prisma.product.create({
+      data: {
+        name: prod.name,
+        brand: prod.brand,
+        category: prod.category,
+        description: prod.description,
+        priceCOP: prod.priceCOP,
+        costCOP: prod.costCOP || 0,
+        stock: prod.stock,
+        minStock: prod.minStock,
+        containsAlcohol: prod.containsAlcohol,
+        imageUrl: prod.imageUrl,
+        monogram: prod.monogram,
+        isActive: prod.isActive,
+      },
+    });
+  }
 
-  // 6. Crear Cliente de Prueba con Habeas Data en Regla (Ley 1581)
-  console.log('👥 Creando cliente y consentimiento de Habeas Data...');
-  const clientUser = await prisma.user.create({
+  // 9. Crear Clientes de Muestra (Cero teléfono — Identificados por correo)
+  console.log('👥 Creando clientes frecuentes de Villacolombia...');
+  const client1 = await prisma.user.create({
     data: {
       email: 'mateo.holguin@gmail.com',
-      phone: '+573157894210',
       name: 'Mateo Holguín',
       role: 'CLIENT',
-      isActive: true,
       clientProfile: {
         create: {
+          preferredBarberId: juanDavidUser.barberProfile.id,
           loyaltyStamps: 4,
-          totalVisits: 5,
-          totalSpentCOP: 185000,
-          technicalNotes: 'Fade #0.5 en sienes con transición suave a tijera arriba. Cerquillo recto a navaja.',
+          totalVisits: 10,
+          totalSpentCOP: 240000,
+          technicalNotes: 'Degradado medio #0.5 en laterales, tijera arriba y cejas limpias a navaja.',
         },
       },
       consents: {
         create: {
-          policyVersion: 'v1.0-2026-10',
+          policyVersion: 'v2.0-2026-10',
           acceptedTerms: true,
           acceptedMarketing: true,
-          ipAddress: '186.84.92.110', // IP residencial Cali
-          userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X)',
+          ipAddress: '181.52.14.90',
+          userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
         },
       },
     },
-    include: { clientProfile: true },
   });
 
-  // 7. Abrir sesión inicial de caja
-  console.log('💵 Creando sesión inicial de caja diaria...');
-  await prisma.cashSession.create({
+  const client2 = await prisma.user.create({
     data: {
-      openedByUserId: adminUser.id,
-      openingBalance: 100000,
-      notes: 'Apertura de turno matutino Punto Fino Villacolombia',
+      email: 'jaime.vecino@puntofino.co',
+      name: 'Jaime Valencia',
+      role: 'CLIENT',
+      clientProfile: {
+        create: {
+          preferredBarberId: emanuelUser.barberProfile.id,
+          loyaltyStamps: 2,
+          totalVisits: 8,
+          totalSpentCOP: 272000,
+          technicalNotes: 'Corte clásico a tijera y ritual de barba con toalla caliente.',
+        },
+      },
     },
   });
 
-  console.log('\n========================================================');
-  console.log('✨ SIEMBRA DE DATOS OFICIALES DE PUNTO FINO EXITOSA ✨');
-  console.log('========================================================');
-  console.log('👤 Administrador: admin@puntofino.com / PuntoFino2026!');
-  console.log('✂️ 3 Barberos Reales:');
-  console.log('   1. Juan David (Barbero & Admin) - juandavid@puntofino.com (Rating 4.9)');
-  console.log('   2. Emanuel Torres (Barbero) - emanuel@puntofino.com (Rating 4.9)');
-  console.log('   3. Juan Diego (Barbero) - juandiego@puntofino.com (Rating 5.0)');
-  console.log('📋 5 Servicios Oficiales:');
-  console.log('   - Experiencia Punto Fino (Corte + Cejas): $ 24.000 COP (35 min)');
-  console.log('   - Experiencia Punto Fino + Ritual de Barba: $ 34.000 COP (45 min)');
-  console.log('   - Experiencia Platinium: $ 55.000 COP (60 min)');
-  console.log('   - Ritual de Barba: $ 12.000 COP (25 min)');
-  console.log('   - Cejas: $ 5.000 COP (15 min)');
-  console.log('========================================================\n');
+  // 10. Crear una cita completada hoy sin colisiones (1 solo servicio)
+  const now = new Date();
+  const pastStart = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+  const pastEnd = new Date(pastStart.getTime() + 35 * 60 * 1000);
+
+  await prisma.appointment.create({
+    data: {
+      bookingCode: 'PF-1001',
+      clientId: client1.id,
+      barberId: juanDavidUser.barberProfile.id,
+      serviceId: srvExpPF.id,
+      startTime: pastStart,
+      endTime: pastEnd,
+      totalDurationMin: 35,
+      totalPriceCOP: 24000,
+      paymentMethod: 'NEQUI',
+      status: 'COMPLETED',
+      clientNotes: 'Mantener largo en la coronilla.',
+      barberNotes: 'Se aplicó Rolda Aqua Wax al finalizar.',
+      items: {
+        create: [
+          {
+            serviceId: srvExpPF.id,
+            priceCOP: 24000,
+            durationMinutes: 35,
+          },
+        ],
+      },
+    },
+  });
+
+  console.log('✨ Siembra maestra Ronda 2 completada exitosamente.');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Error durante la siembra de datos:', e);
+    console.error('❌ Error en la siembra:', e);
     process.exit(1);
   })
   .finally(async () => {

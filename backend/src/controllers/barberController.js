@@ -1,22 +1,40 @@
 const prisma = require('../config/prisma');
 const { sendSuccess, sendError } = require('../utils/helpers');
+const { calculateDailySlots } = require('../services/availabilityService');
 
-// @desc    Listar todos los barberos activos con sus especialidades y fotos
+const REST_DAY_NAMES = {
+  0: 'Descansa los domingos',
+  1: 'Descansa los lunes',
+  2: 'Descansa los martes',
+  3: 'Descansa los miércoles',
+  4: 'Descansa los jueves',
+  5: 'Descansa los viernes',
+  6: 'Descansa los sábados',
+};
+
+// @desc    Listar todos los barberos activos (Sin fotos de perfil ni teléfonos)
 // @route   GET /api/barbers
 // @access  Public
 exports.getBarbers = async (req, res) => {
   try {
+    const todayStr = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Bogota',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
+
     const [barbers, allServices] = await Promise.all([
       prisma.barberProfile.findMany({
-        where: { isActive: true },
+        where: { isActive: true, isArchived: false },
         orderBy: { sortOrder: 'asc' },
         include: {
           user: {
             select: {
               id: true,
               name: true,
-              phone: true,
               email: true,
+              role: true,
             },
           },
           schedules: true,
@@ -34,19 +52,36 @@ exports.getBarbers = async (req, res) => {
       priceCOP: s.priceCOP,
       durationMinutes: s.durationMinutes,
       category: s.category,
-      badge: s.badge || null,
+      isPopular: s.isPopular,
+      badgeLabel: s.isPopular ? (s.badgeLabel || 'Popular') : null,
     }));
 
-    const formatted = barbers.map((b) => ({
-      id: b.id,
-      userId: b.userId,
-      name: b.user.name,
-      nickname: b.nickname,
-      bio: b.bio,
-      commissionRate: Number(b.commissionRate),
-      services: formattedServices,
-      schedules: b.schedules,
-    }));
+    const formatted = await Promise.all(
+      barbers.map(async (b) => {
+        const todayAvailability = await calculateDailySlots({
+          date: todayStr,
+          durationMinutes: 35,
+          barberId: b.id,
+        });
+
+        return {
+          id: b.id,
+          userId: b.userId,
+          name: b.user.name,
+          nickname: b.nickname,
+          bio: b.bio,
+          isDualRole: b.user.role === 'ADMIN',
+          weeklyRestDay: b.weeklyRestDay,
+          restDayLabel: REST_DAY_NAMES[b.weeklyRestDay] || 'Descanso semanal',
+          commissionRate: Number(b.commissionRate),
+          availableToday: todayAvailability.available,
+          todayReason: todayAvailability.reason || null,
+          nextSlotToday: todayAvailability.firstAvailableSlot?.time || null,
+          services: formattedServices,
+          schedules: b.schedules,
+        };
+      })
+    );
 
     return sendSuccess(res, 200, 'Equipo de barberos obtenido.', {
       count: formatted.length,
@@ -58,208 +93,179 @@ exports.getBarbers = async (req, res) => {
   }
 };
 
-// @desc    Obtener disponibilidad en tiempo real para una fecha específica
+// @desc    Obtener disponibilidad en tiempo real para una fecha específica y barbero (o 'any')
 // @route   GET /api/barbers/:id/availability
 // @access  Public
 exports.getBarberAvailability = async (req, res) => {
   try {
     const { id } = req.params;
-    const { date, duration = 40 } = req.query; // date en formato 'YYYY-MM-DD'
+    const { date, duration = 35, excludeAppointmentId } = req.query;
 
     if (!date) {
       return sendError(res, 400, 'El parámetro date (YYYY-MM-DD) es obligatorio.');
     }
 
-    const targetDate = new Date(`${date}T00:00:00.000-05:00`); // Zona America/Bogota
-    const dayOfWeek = targetDate.getDay(); // 0: Domingo, 1: Lunes, etc.
-
-    // 1. Verificar horario laboral del barbero para este día
-    const schedule = await prisma.barberSchedule.findUnique({
-      where: {
-        barberId_dayOfWeek: {
-          barberId: id,
-          dayOfWeek,
-        },
-      },
+    const result = await calculateDailySlots({
+      date,
+      durationMinutes: parseInt(duration, 10) || 35,
+      barberId: id || 'any',
+      excludeAppointmentId: excludeAppointmentId || null,
     });
-
-    if (!schedule || !schedule.isWorking) {
-      return sendSuccess(res, 200, 'El barbero no labora en este día.', {
-        available: false,
-        reason: 'Día no laboral para este barbero.',
-        slots: [],
-      });
-    }
-
-    // 2. Verificar si tiene ausencias o descansos registrados
-    const startOfDay = new Date(`${date}T00:00:00.000-05:00`);
-    const endOfDay = new Date(`${date}T23:59:59.999-05:00`);
-
-    const absences = await prisma.barberAbsence.findMany({
-      where: {
-        barberId: id,
-        startDate: { lte: endOfDay },
-        endDate: { gte: startOfDay },
-      },
-    });
-
-    // 3. Consultar citas confirmadas del día
-    const appointments = await prisma.appointment.findMany({
-      where: {
-        barberId: id,
-        status: { in: ['CONFIRMED', 'IN_PROGRESS'] },
-        startTime: { gte: startOfDay, lte: endOfDay },
-      },
-      select: {
-        startTime: true,
-        endTime: true,
-      },
-    });
-
-    // 4. Consultar bloqueos atómicos temporales activos (SlotHold de 8 min)
-    const now = new Date();
-    const activeHolds = await prisma.slotHold.findMany({
-      where: {
-        barberId: id,
-        expiresAt: { gt: now },
-        startTime: { gte: startOfDay, lte: endOfDay },
-      },
-      select: {
-        startTime: true,
-        endTime: true,
-      },
-    });
-
-    // 5. Generar franjas horarias con intervalos de 15 min y validar colisiones
-    const [startH, startM] = schedule.startTime.split(':').map(Number);
-    const [endH, endM] = schedule.endTime.split(':').map(Number);
-
-    const serviceDuration = parseInt(duration, 10);
-    const bufferMin = 10; // 10 min de limpieza y cambio de cuchilla
-    const totalSlotSpan = serviceDuration + bufferMin;
-
-    const slots = [];
-    let currentMin = startH * 60 + startM;
-    const closingMin = endH * 60 + endM;
-
-    while (currentMin + serviceDuration <= closingMin) {
-      const slotHour = Math.floor(currentMin / 60);
-      const slotMinute = currentMin % 60;
-      
-      const slotStartTime = new Date(`${date}T${String(slotHour).padStart(2, '0')}:${String(slotMinute).padStart(2, '0')}:00.000-05:00`);
-      const slotEndTime = new Date(slotStartTime.getTime() + serviceDuration * 60 * 1000);
-
-      // Comprobar si choca con alguna cita existente
-      const collidesAppointment = appointments.some((apt) => {
-        return (slotStartTime < apt.endTime && slotEndTime > apt.startTime);
-      });
-
-      // Comprobar si choca con algún bloqueo temporal activo
-      const collidesHold = activeHolds.some((hold) => {
-        return (slotStartTime < hold.endTime && slotEndTime > hold.startTime);
-      });
-
-      // Comprobar si choca con alguna ausencia/descanso
-      const collidesAbsence = absences.some((abs) => {
-        return (slotStartTime < abs.endDate && slotEndTime > abs.startDate);
-      });
-
-      // No permitir horas en el pasado si la fecha es hoy
-      const isPast = slotStartTime <= now;
-
-      const isAvailable = !collidesAppointment && !collidesHold && !collidesAbsence && !isPast;
-
-      const period = slotHour >= 12 ? 'p. m.' : 'a. m.';
-      const displayHour = slotHour > 12 ? slotHour - 12 : slotHour === 0 ? 12 : slotHour;
-      const timeFormatted = `${String(displayHour).padStart(2, '0')}:${String(slotMinute).padStart(2, '0')} ${period}`;
-
-      slots.push({
-        time: timeFormatted,
-        isoStartTime: slotStartTime.toISOString(),
-        available: isAvailable,
-        busyReason: collidesAppointment ? 'Cita programada' : collidesHold ? 'Cupo en proceso de pago' : collidesAbsence ? 'Descanso del barbero' : isPast ? 'Hora pasada' : null,
-      });
-
-      // Avanzar al siguiente intervalo (por bloques de 45 o 30 min)
-      currentMin += 45;
-    }
 
     return sendSuccess(res, 200, 'Disponibilidad calculada.', {
-      date,
+      ...result,
       barberId: id,
-      daySchedule: `${schedule.startTime} - ${schedule.endTime}`,
-      totalSlots: slots.length,
-      availableSlotsCount: slots.filter((s) => s.available).length,
-      slots,
     });
   } catch (error) {
     console.error('Error al calcular disponibilidad:', error);
-    return sendError(res, 500, 'Error al calcular la disponibilidad del barbero.');
+    return sendError(res, 500, 'Error al calcular la disponibilidad.');
   }
 };
 
-// @desc    Obtener resumen del día para la app móvil del barbero (Citas, en silla, comisión)
+// @desc    Obtener resumen del día del barbero autenticado (Estricto aislamiento por rol)
 // @route   GET /api/barbers/me/daily-summary
-// @access  Private (Staff)
+// @access  Private (BARBER, ADMIN)
 exports.getBarberDailySummary = async (req, res) => {
   try {
-    let barberProfile = req.user.barberProfile;
-    if (!barberProfile) {
-      if (req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN') {
-        barberProfile = await prisma.barberProfile.findFirst({
-          where: { isActive: true },
-          include: { user: true },
-        });
+    // RBAC estricto: un barbero jamás puede consultar el resumen de otro barbero manipulando parámetros
+    if (req.user.role === 'BARBER') {
+      if (req.query.barberId && req.query.barberId !== req.user.barberProfile?.id) {
+        return sendError(res, 403, 'Acceso denegado: no tienes permiso para ver datos de otro barbero.');
       }
+      if (req.params.barberId && req.params.barberId !== req.user.barberProfile?.id) {
+        return sendError(res, 403, 'Acceso denegado: no tienes permiso para ver datos de otro barbero.');
+      }
+    }
+
+    let barberProfile = req.user.barberProfile;
+    if (!barberProfile && (req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN')) {
+      barberProfile = await prisma.barberProfile.findFirst({
+        where: { isActive: true, isArchived: false },
+        orderBy: { sortOrder: 'asc' },
+        include: { user: true },
+      });
     }
 
     if (!barberProfile) {
       return sendError(res, 404, 'Perfil de barbero no encontrado.');
     }
 
-    const now = new Date();
-    const startOfDay = new Date(now);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(now);
-    endOfDay.setHours(23, 59, 59, 999);
+    let targetDate = req.query.date;
+    if (!targetDate) {
+      targetDate = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Bogota',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(new Date());
+    }
 
-    const appointments = await prisma.appointment.findMany({
-      where: {
-        barberId: barberProfile.id,
-        startTime: { gte: startOfDay, lte: endOfDay },
-      },
-      orderBy: { startTime: 'asc' },
-      include: {
-        client: {
-          include: {
-            clientProfile: true,
+    const startOfDay = new Date(`${targetDate}T00:00:00.000-05:00`);
+    const endOfDay = new Date(`${targetDate}T23:59:59.999-05:00`);
+
+    const [appointments, notifications] = await Promise.all([
+      prisma.appointment.findMany({
+        where: {
+          barberId: barberProfile.id,
+          startTime: { gte: startOfDay, lte: endOfDay },
+        },
+        orderBy: { startTime: 'asc' },
+        include: {
+          client: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+              clientProfile: true,
+            },
           },
+          service: true,
+          items: { include: { service: true } },
+          consumedProducts: { include: { product: true } },
         },
-        items: {
-          include: { service: true },
+      }),
+      prisma.panelNotification.findMany({
+        where: {
+          barberId: barberProfile.id,
         },
-      },
-    });
+        orderBy: { createdAt: 'desc' },
+        take: 15,
+      }),
+    ]);
 
     const inChair = appointments.find((a) => a.status === 'IN_PROGRESS');
     const completed = appointments.filter((a) => a.status === 'COMPLETED');
     const upcoming = appointments.filter((a) => a.status === 'CONFIRMED');
 
     const totalServicesCOP = completed.reduce((sum, a) => sum + a.totalPriceCOP, 0);
+    const totalTipsCOP = completed.reduce((sum, a) => sum + (a.tipCOP || 0), 0);
     const commissionRate = Number(barberProfile.commissionRate) || 0.5;
     const commissionCOP = Math.round(totalServicesCOP * commissionRate);
 
     let inChairMinutes = 0;
+    const now = new Date();
     if (inChair) {
       inChairMinutes = Math.max(0, Math.floor((now.getTime() - new Date(inChair.startTime).getTime()) / 60000));
     }
 
+    const STATUS_MAP_FROM_PRISMA = {
+      CONFIRMED: 'confirmada',
+      IN_PROGRESS: 'en_progreso',
+      COMPLETED: 'completada',
+      CANCELLED: 'cancelada',
+      NO_SHOW: 'no_asistio',
+    };
+
+    const formatApt = (a) => {
+      const srvName = a.service?.name || a.items[0]?.service?.name || 'Servicio Punto Fino';
+      const phone = a.clientPhone || a.client?.phone || '';
+      return {
+        id: a.id,
+        _id: a.id,
+        bookingCode: a.bookingCode,
+        clientName: a.client?.name || 'Cliente',
+        clientEmail: a.client?.email || '',
+        clientPhone: phone,
+        client: {
+          id: a.client?.id,
+          name: a.client?.name || 'Cliente',
+          email: a.client?.email || '',
+          phone,
+        },
+        service: a.service || (a.items[0]?.service ? a.items[0].service : { name: srvName }),
+        serviceName: srvName,
+        serviceNames: srvName,
+        totalDuration: a.totalDurationMin,
+        totalDurationMin: a.totalDurationMin,
+        totalPrice: a.totalPriceCOP,
+        totalPriceCOP: a.totalPriceCOP,
+        tipCOP: a.tipCOP || 0,
+        paymentMethod: a.paymentMethod || 'efectivo',
+        status: STATUS_MAP_FROM_PRISMA[a.status] || a.status?.toLowerCase() || 'confirmada',
+        rawStatus: a.status,
+        isWalkIn: a.isWalkIn,
+        startTime: a.startTime,
+        endTime: a.endTime,
+        clientNotes: a.clientNotes,
+        technicalNotes: a.client?.clientProfile?.technicalNotes || a.barberNotes,
+        consumedProducts: a.consumedProducts.map((cp) => ({
+          id: cp.product.id,
+          name: cp.product.name,
+          quantity: cp.quantity,
+          unitPriceCOP: cp.unitPriceCOP,
+        })),
+      };
+    };
+
     return sendSuccess(res, 200, 'Resumen del día del barbero.', {
-      date: now.toISOString().split('T')[0],
+      date: targetDate,
       barber: {
         id: barberProfile.id,
         nickname: barberProfile.nickname,
         name: req.user.name,
+        weeklyRestDay: barberProfile.weeklyRestDay,
+        restDayLabel: REST_DAY_NAMES[barberProfile.weeklyRestDay],
         commissionRate,
       },
       stats: {
@@ -268,35 +274,160 @@ exports.getBarberDailySummary = async (req, res) => {
         upcomingCount: upcoming.length,
         hasInChair: Boolean(inChair),
         totalServicesCOP,
-        commissionCOP, // [REVISAR CON CONTADOR / ABOGADO LABORAL: 50% honorarios independientes]
+        totalTipsCOP,
+        commissionCOP,
       },
-      inChair: inChair ? {
-        id: inChair.id,
-        bookingCode: inChair.bookingCode,
-        clientName: inChair.client.name,
-        clientPhone: inChair.client.phone,
-        serviceNames: inChair.items.map((i) => i.service.name).join(' + '),
-        totalPriceCOP: inChair.totalPriceCOP,
-        technicalNotes: inChair.client.clientProfile?.technicalNotes || inChair.barberNotes,
-        startTime: inChair.startTime,
-        inChairMinutes,
-      } : null,
-      appointments: appointments.map((a) => ({
-        id: a.id,
-        bookingCode: a.bookingCode,
-        clientName: a.client.name,
-        clientPhone: a.client.phone,
-        serviceNames: a.items.map((i) => i.service.name).join(' + '),
-        totalPriceCOP: a.totalPriceCOP,
-        status: a.status,
-        isWalkIn: a.isWalkIn,
-        startTime: a.startTime,
-        endTime: a.endTime,
-        technicalNotes: a.client.clientProfile?.technicalNotes || a.barberNotes,
-      })),
+      inChair: inChair ? { ...formatApt(inChair), inChairMinutes } : null,
+      appointments: appointments.map(formatApt),
+      notifications,
     });
   } catch (error) {
     console.error('Error en daily summary:', error);
     return sendError(res, 500, 'Error al obtener resumen diario.');
+  }
+};
+
+// @desc    Consultar historial e ingresos propios del barbero (RBAC estricto)
+// @route   GET /api/barbers/me/earnings
+// @access  Private (BARBER, ADMIN)
+exports.getBarberEarnings = async (req, res) => {
+  try {
+    if (req.user.role === 'BARBER' && req.query.barberId && req.query.barberId !== req.user.barberProfile?.id) {
+      return sendError(res, 403, 'Acceso denegado: solo puedes consultar tus propios ingresos.');
+    }
+
+    let barberProfile = req.user.barberProfile;
+    if (!barberProfile && req.user.role === 'ADMIN') {
+      barberProfile = await prisma.barberProfile.findFirst({ where: { isActive: true } });
+    }
+    if (!barberProfile) {
+      return sendError(res, 404, 'Perfil de barbero no encontrado.');
+    }
+
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    const startOfWeek = new Date(startOfToday);
+    startOfWeek.setDate(startOfToday.getDate() - ((startOfToday.getDay() + 6) % 7));
+    const startOfBiweekly = new Date(now.getFullYear(), now.getMonth(), now.getDate() <= 15 ? 1 : 16, 0, 0, 0);
+
+    const [completedAppointments, settlements] = await Promise.all([
+      prisma.appointment.findMany({
+        where: {
+          barberId: barberProfile.id,
+          status: 'COMPLETED',
+        },
+        orderBy: { startTime: 'desc' },
+        include: {
+          client: { select: { name: true, email: true } },
+          service: true,
+          items: { include: { service: true } },
+          consumedProducts: { include: { product: true } },
+        },
+      }),
+      prisma.commissionSettlement.findMany({
+        where: {
+          barberId: barberProfile.id,
+          status: { in: ['APROBADA', 'PAGADA', 'LIQUIDADO'] },
+        },
+        orderBy: { periodEnd: 'desc' },
+      }),
+    ]);
+
+    const commRate = Number(barberProfile.commissionRate) || 0.5;
+    const prodCommRate = Number(barberProfile.productCommissionRate) || 0.15;
+
+    const calcMetrics = (list) => {
+      const servicesCOP = list.reduce((sum, a) => sum + a.totalPriceCOP, 0);
+      const tipsCOP = list.reduce((sum, a) => sum + (a.tipCOP || 0), 0);
+      const productsCOP = list.reduce(
+        (sum, a) => sum + a.consumedProducts.reduce((ps, p) => ps + p.unitPriceCOP * p.quantity, 0),
+        0
+      );
+      const serviceCommCOP = Math.round(servicesCOP * commRate);
+      const productCommCOP = Math.round(productsCOP * prodCommRate);
+      return {
+        count: list.length,
+        servicesCOP,
+        tipsCOP,
+        productsCOP,
+        serviceCommCOP,
+        productCommCOP,
+        totalEarnedCOP: serviceCommCOP + productCommCOP + tipsCOP,
+      };
+    };
+
+    const todayList = completedAppointments.filter((a) => new Date(a.startTime) >= startOfToday);
+    const weekList = completedAppointments.filter((a) => new Date(a.startTime) >= startOfWeek);
+    const biweeklyList = completedAppointments.filter((a) => new Date(a.startTime) >= startOfBiweekly);
+
+    return sendSuccess(res, 200, 'Ingresos y liquidaciones del barbero.', {
+      barber: {
+        id: barberProfile.id,
+        name: req.user.name,
+        nickname: barberProfile.nickname,
+        commissionRatePct: Math.round(commRate * 100),
+        productCommissionRatePct: Math.round(prodCommRate * 100),
+      },
+      summary: {
+        today: calcMetrics(todayList),
+        week: calcMetrics(weekList),
+        biweekly: calcMetrics(biweeklyList),
+      },
+      settlements,
+    });
+  } catch (error) {
+    console.error('Error en getBarberEarnings:', error);
+    return sendError(res, 500, 'Error al consultar ingresos.');
+  }
+};
+
+// @desc    Bloquear tiempo puntual propio del barbero
+// @route   POST /api/barbers/me/block-time
+// @access  Private (BARBER, ADMIN)
+exports.blockOwnTime = async (req, res) => {
+  try {
+    const barberProfile = req.user.barberProfile;
+    if (!barberProfile) {
+      return sendError(res, 403, 'Solo un barbero activo puede bloquear tiempo en su agenda.');
+    }
+
+    const { startTime, endTime, reason } = req.body;
+    if (!startTime || !endTime) {
+      return sendError(res, 400, 'Debes indicar la hora de inicio y fin del bloqueo.');
+    }
+
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    if (end <= start) {
+      return sendError(res, 400, 'La hora de fin debe ser posterior a la de inicio.');
+    }
+
+    // Verificar que no tenga citas confirmadas en ese rango
+    const conflict = await prisma.appointment.findFirst({
+      where: {
+        barberId: barberProfile.id,
+        status: { in: ['CONFIRMED', 'IN_PROGRESS'] },
+        startTime: { lt: end },
+        endTime: { gt: start },
+      },
+    });
+
+    if (conflict) {
+      return sendError(res, 409, 'Ya tienes una cita confirmada en ese rango horario. Solicita al administrador reasignarla primero.');
+    }
+
+    const absence = await prisma.barberAbsence.create({
+      data: {
+        barberId: barberProfile.id,
+        startDate: start,
+        endDate: end,
+        reason: reason || 'Bloqueo puntual de agenda',
+      },
+    });
+
+    return sendSuccess(res, 201, 'Horario bloqueado en tu agenda.', { absence });
+  } catch (error) {
+    console.error('Error en blockOwnTime:', error);
+    return sendError(res, 500, 'Error al bloquear horario.');
   }
 };

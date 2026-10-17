@@ -9,35 +9,30 @@ export default function BookingPage() {
   const { isAuthenticated, user, isBarber, isAdmin } = useAuthStore();
   const navigate = useNavigate();
 
-  // Si un barbero o admin intenta agendar citas como cliente, redirigir a su propio panel
   useEffect(() => {
     if (isAuthenticated) {
-      if (isBarber?.() || user?.role === 'barbero' || user?.role === 'BARBER') {
-        navigate('/barber', { replace: true });
-      } else if (isAdmin?.() || user?.role === 'admin' || user?.role === 'ADMIN') {
+      if (isAdmin?.()) {
         navigate('/admin', { replace: true });
+      } else if (isBarber?.()) {
+        navigate('/barber', { replace: true });
       }
     }
   }, [isAuthenticated, user, navigate, isBarber, isAdmin]);
 
-  if (isAuthenticated && (user?.role === 'barbero' || user?.role === 'BARBER' || user?.role === 'admin' || user?.role === 'ADMIN')) {
-    return null;
-  }
-
   return (
     <PageTransition>
       <Navbar />
-      <div className="min-h-screen bg-pf-carbon text-pf-bone pt-28 pb-32 sm:pb-24 px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="mb-8 text-center">
-            <span className="text-[11px] font-mono tracking-widest text-pf-terracota font-bold uppercase inline-block mb-2">
-              PUNTO FINO · VILLACOLOMBIA · SANTIAGO DE CALI
+      <div className="min-h-screen bg-[#0b0c0e] text-white pt-32 pb-28 px-4 sm:px-6">
+        <div className="max-w-[1320px] mx-auto">
+          <div className="mb-10 text-center">
+            <span className="text-xs font-sans font-semibold text-[#E15233] inline-block mb-2">
+              Punto Fino · Carrera 12 #53-51, Villacolombia, Cali
             </span>
-            <h1 className="font-display font-bold text-3xl sm:text-4xl text-pf-bone mb-2">
-              Reservá tu Turno en la Silla
+            <h1 className="font-display font-bold text-3xl sm:text-5xl text-white mb-2">
+              Agenda tu cita
             </h1>
-            <p className="text-pf-muted text-xs sm:text-sm max-w-lg mx-auto leading-relaxed">
-              Elegí tus servicios, tu barbero de confianza y la franja horaria. Sin crear cuentas ni contraseñas.
+            <p className="text-[#9B988F] text-xs sm:text-sm max-w-lg mx-auto leading-relaxed font-sans">
+              Elige tu servicio, tu barbero y la franja horaria disponible. Confirmación directa por correo electrónico.
             </p>
           </div>
 

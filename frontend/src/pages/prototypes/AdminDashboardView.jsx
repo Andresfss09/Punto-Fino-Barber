@@ -49,12 +49,12 @@ export default function AdminDashboardView() {
     {
       chairNumber: 1,
       barberId: 'barber-1',
-      nickname: 'El Fino',
-      fullName: 'Brayan Murillo',
+      nickname: 'Juan David',
+      fullName: 'Juan David',
       status: 'EN_SILLA',
       isOccupied: true,
       clientName: 'Andrés Felipe Caicedo',
-      serviceName: 'Corte Clásico + Barba Vaporizada',
+      serviceName: 'Corte + barba',
       elapsedMin: 28,
       todayRevenueCOP: 185000,
       todayCommissionCOP: 92500,
@@ -63,8 +63,8 @@ export default function AdminDashboardView() {
     {
       chairNumber: 2,
       barberId: 'barber-2',
-      nickname: 'El Primo',
-      fullName: 'Carlos Valencia',
+      nickname: 'Emanuel Torres',
+      fullName: 'Emanuel Torres',
       status: 'LIBRE',
       isOccupied: false,
       clientName: null,
@@ -77,30 +77,16 @@ export default function AdminDashboardView() {
     {
       chairNumber: 3,
       barberId: 'barber-3',
-      nickname: 'Junior',
-      fullName: 'Andrés Mosquera',
+      nickname: 'Juan Diego',
+      fullName: 'Juan Diego',
       status: 'EN_SILLA',
       isOccupied: true,
       clientName: 'Don Jaime (Vecino)',
-      serviceName: 'Corte Tradicional Punto Fino',
+      serviceName: 'Corte sencillo',
       elapsedMin: 14,
       todayRevenueCOP: 95000,
       todayCommissionCOP: 47500,
       todayCompletedCount: 3,
-    },
-    {
-      chairNumber: 4,
-      barberId: 'barber-4',
-      nickname: 'Don Alberto',
-      fullName: 'Alberto Cardona (Master)',
-      status: 'DESCANSO',
-      isOccupied: false,
-      clientName: null,
-      serviceName: 'Pausa técnica de afilado',
-      elapsedMin: 0,
-      todayRevenueCOP: 65000,
-      todayCommissionCOP: 32500,
-      todayCompletedCount: 2,
     },
   ]);
 
@@ -129,8 +115,8 @@ export default function AdminDashboardView() {
   const [payroll, setPayroll] = useState([
     {
       barberId: 'barber-1',
-      nickname: 'El Fino',
-      fullName: 'Brayan Murillo',
+      nickname: 'Juan David',
+      fullName: 'Juan David',
       chair: 'Silla #1',
       servicesCount: 26,
       grossCOP: 1040000,
@@ -141,8 +127,8 @@ export default function AdminDashboardView() {
     },
     {
       barberId: 'barber-2',
-      nickname: 'El Primo',
-      fullName: 'Carlos Valencia',
+      nickname: 'Emanuel Torres',
+      fullName: 'Emanuel Torres',
       chair: 'Silla #2',
       servicesCount: 22,
       grossCOP: 880000,
@@ -153,8 +139,8 @@ export default function AdminDashboardView() {
     },
     {
       barberId: 'barber-3',
-      nickname: 'Junior',
-      fullName: 'Andrés Mosquera',
+      nickname: 'Juan Diego',
+      fullName: 'Juan Diego',
       chair: 'Silla #3',
       servicesCount: 19,
       grossCOP: 720000,
@@ -163,49 +149,34 @@ export default function AdminDashboardView() {
       netPayableCOP: 402000,
       status: 'PENDIENTE',
     },
-    {
-      barberId: 'barber-4',
-      nickname: 'Don Alberto',
-      fullName: 'Alberto Cardona',
-      chair: 'Silla #4 (Master)',
-      servicesCount: 14,
-      grossCOP: 580000,
-      commissionCOP: 290000,
-      tipsCOP: 35000,
-      netPayableCOP: 325000,
-      status: 'PENDIENTE',
-    },
   ]);
 
   const [clients, setClients] = useState([
     {
       id: 'c1',
       name: 'Andrés Felipe Caicedo',
-      phone: '+57 315 489 1234',
       email: 'andres.caicedo@cali.co',
       stamps: 4,
       visits: 8,
       totalSpent: 360000,
       lastVisit: 'Hoy (En silla)',
       formula: 'Fade #0.5 en sienes con transición suave a tijera arriba. Cerquillo recto a navaja de un solo filo. Toalla tibia, evitar loción con alcohol.',
-      barber: 'Brayan Murillo',
+      barber: 'Juan David',
     },
     {
       id: 'c2',
       name: 'Mateo Holguín',
-      phone: '+57 312 901 2345',
       email: 'mateo.holguin@gmail.com',
       stamps: 5,
       visits: 5,
       totalSpent: 185000,
       lastVisit: 'Hoy 04:15 PM',
       formula: 'Degradado medio clásico a tijera arriba con navaja en contornos. Peinado con cera mate.',
-      barber: 'Carlos Valencia',
+      barber: 'Emanuel Torres',
     },
     {
       id: 'c3',
       name: 'Don Jaime (Vecino Villacolombia)',
-      phone: '+57 318 777 9900',
       email: 'jaime.vecino@gmail.com',
       stamps: 3,
       visits: 12,
@@ -217,14 +188,13 @@ export default function AdminDashboardView() {
     {
       id: 'c4',
       name: 'Sebastián Varela',
-      phone: '+57 300 123 4567',
       email: 'sebastian.varela@valle.gov.co',
       stamps: 2,
       visits: 3,
       totalSpent: 135000,
       lastVisit: 'Ayer',
       formula: 'Combo completo con ritual de barba. Piel reactiva en garganta, aplicar bálsamo de caléndula.',
-      barber: 'Emanuel Torres',
+      barber: 'Juan Diego',
     },
   ]);
 
@@ -462,7 +432,7 @@ export default function AdminDashboardView() {
               </div>
               <div className="text-xs text-pf-muted space-y-1">
                 <div>• Cuchillas Derby Premium: <strong>12 unidades</strong> (Stock mínimo requerido: 20).</div>
-                <div>• Toallas de vapor esterilizadas: <strong>18 disponibles</strong> (Suficiente para el turno de hoy).</div>
+                <div>• Toallas de vapor esterilizadas: <strong>18 disponibles</strong> (Suficiente para la jornada de hoy).</div>
               </div>
             </div>
 
@@ -493,12 +463,12 @@ export default function AdminDashboardView() {
                 Recepción & Timeline Multi-Silla (Hoy)
               </h3>
               <p className="text-xs text-pf-muted">
-                Control visual de turnos de recepción. Permite sentar clientes walk-in y gestionar citas de la web pública.
+                Control visual de citas en recepción. Permite sentar clientes walk-in y gestionar citas de la web pública.
               </p>
             </div>
             <div className="flex items-center gap-2">
               <button 
-                onClick={() => showToast('👤 Cliente sin cita registrado y asignado a Silla #2 Carlos Valencia.')}
+                onClick={() => showToast('👤 Cliente sin cita registrado y asignado a Silla #2 Emanuel Torres.')}
                 className="pf-btn-primary text-xs"
               >
                 <Plus className="w-3.5 h-3.5" /> + Recibir Cliente en Sala
@@ -529,7 +499,7 @@ export default function AdminDashboardView() {
                   </div>
                   <div className="p-2 rounded bg-pf-surface border border-white/5 text-center">
                     <div className="text-[9px] text-pf-muted">11:15 AM</div>
-                    <div className="font-bold text-pf-bone truncate">Carlos "Mono"</div>
+                    <div className="font-bold text-pf-bone truncate">Carlos V.</div>
                     <div className="text-[8px] text-pf-available">Listo</div>
                   </div>
                   <div className="p-2 rounded bg-pf-terracota/20 border border-pf-terracota text-center shadow-fine-terracota">
@@ -570,7 +540,7 @@ export default function AdminDashboardView() {
               <div className="flex items-center justify-between border-b border-white/5 pb-3">
                 <div>
                   <span className="text-[10px] font-mono text-pf-brass font-bold uppercase">ESTADO DE CAJA</span>
-                  <h3 className="font-display font-bold text-base text-pf-bone">Arqueo Diario de Turno</h3>
+                  <h3 className="font-display font-bold text-base text-pf-bone">Arqueo Diario de Caja</h3>
                 </div>
                 <span className="pf-badge-available font-mono text-[10px]">ABIERTA (09:00 AM)</span>
               </div>
@@ -611,7 +581,7 @@ export default function AdminDashboardView() {
               </button>
             </div>
 
-            {/* Desglose por Métodos de Pago de Barrio */}
+            {/* Desglose por Métodos de Pago */}
             <div className="pf-card p-6 space-y-4 lg:col-span-2">
               <div className="flex items-center justify-between border-b border-white/5 pb-3">
                 <h3 className="font-display font-bold text-base text-pf-bone">
@@ -830,7 +800,7 @@ export default function AdminDashboardView() {
                 Directorio de Clientes & Fichas Técnicas Privadas
               </h3>
               <p className="text-xs text-pf-muted">
-                Registro fiel de las preferencias de corte, toalla caliente y fidelización de vecinos de Cali.
+                Registro fiel de las preferencias de corte, toalla caliente y fidelización de clientes de Cali.
               </p>
             </div>
             <div className="text-xs font-mono text-pf-muted">
@@ -844,7 +814,7 @@ export default function AdminDashboardView() {
                 <div className="flex items-center justify-between border-b border-white/5 pb-2">
                   <div>
                     <div className="font-display font-bold text-sm text-pf-bone">{c.name}</div>
-                    <div className="text-[10px] font-mono text-pf-muted">{c.phone} · {c.email}</div>
+                    <div className="text-[10px] font-mono text-pf-muted">{c.email}</div>
                   </div>
                   <div className="text-right">
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-pf-brass/20 text-pf-brass-light border border-pf-brass/30">
@@ -884,7 +854,7 @@ export default function AdminDashboardView() {
             </div>
             <div className="space-y-3 text-xs">
               <p className="text-pf-muted">
-                Selecciona el barbero que recibirá el turno. Se notificarán automáticamente por correo el cliente y ambos barberos.
+                Selecciona el barbero que recibirá la cita. Se notificarán automáticamente por correo el cliente y ambos barberos.
               </p>
               <div>
                 <label className="pf-label">Barbero Destino</label>

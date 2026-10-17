@@ -23,7 +23,7 @@ import { colors, spacing, radius, typography } from '../theme/tokens';
 export const AdminAuditScreen: React.FC = () => {
   const [isCashClosed, setIsCashClosed] = useState(false);
 
-  // Datos consolidados del turno de hoy en Punto Fino
+  // Datos consolidados de la jornada de hoy en Punto Fino
   const dailySummary = {
     totalRevenueCOP: 485000,
     totalTipsCOP: 32000,
@@ -39,39 +39,30 @@ export const AdminAuditScreen: React.FC = () => {
   const barberBreakdown = [
     {
       id: 'barber-1',
-      name: 'Brayan Murillo "El Fino"',
+      name: 'Juan David',
       chair: 'Silla #1',
-      servicesCount: 5,
-      totalGeneratedCOP: 185000,
-      commissionCOP: 92500,
-      tipsCOP: 12000,
+      servicesCount: 6,
+      totalGeneratedCOP: 210000,
+      commissionCOP: 105000,
+      tipsCOP: 15000,
     },
     {
       id: 'barber-2',
-      name: 'Carlos "El Primo"',
+      name: 'Emanuel Torres',
       chair: 'Silla #2',
-      servicesCount: 4,
-      totalGeneratedCOP: 140000,
-      commissionCOP: 70000,
-      tipsCOP: 8000,
+      servicesCount: 5,
+      totalGeneratedCOP: 175000,
+      commissionCOP: 87500,
+      tipsCOP: 10000,
     },
     {
       id: 'barber-3',
-      name: 'Andrés "Junior"',
+      name: 'Juan Diego',
       chair: 'Silla #3',
       servicesCount: 3,
-      totalGeneratedCOP: 95000,
-      commissionCOP: 47500,
+      totalGeneratedCOP: 100000,
+      commissionCOP: 50000,
       tipsCOP: 7000,
-    },
-    {
-      id: 'barber-4',
-      name: 'Alberto Cardona (Master)',
-      chair: 'Silla #4',
-      servicesCount: 2,
-      totalGeneratedCOP: 65000,
-      commissionCOP: 32500,
-      tipsCOP: 5000,
     },
   ];
 

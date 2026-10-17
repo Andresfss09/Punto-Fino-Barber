@@ -42,17 +42,17 @@ Puedes navegar directamente a cada prototipo mediante la barra superior o con lo
 ## 📱 2. Resumen de Pantallas Prototipadas
 
 ### 2.1 Plataforma Web Pública de Reservas (`PublicBookingView.jsx`)
-- **Paso 1 (Servicios):** Selección múltiple de servicios con cálculo instantáneo de duración y precio total en COP.
-- **Paso 2 (Barbero):** Tarjetas con fotos reales del equipo (`Brayan "El Fino"`, `Carlos "El Primo"`, `Andrés "Junior"`) y opción *"El primero disponible"*.
-- **Paso 3 (Fecha y Hora):** Simulación de `SlotHold` atómico con temporizador regresivo de 8 minutos para evitar doble reserva.
-- **Paso 4 (Datos del Cliente):** Formulario sin login obligatorio con validación de celular colombiano (+57), notas de corte, casilla obligatoria de Habeas Data (Ley 1581 de 2012) con modal legal y casilla separada para promociones.
+- **Paso 1 (Servicio):** Selección única de servicio con duración y precio en COP.
+- **Paso 2 (Barbero):** Tarjetas tipográficas del equipo (`Juan David`, `Emanuel Torres`, `Juan Diego`) y opción *"El primero disponible"*.
+- **Paso 3 (Fecha y Hora):** `SlotHold` atómico con temporizador de 8 minutos para evitar colisiones.
+- **Paso 4 (Datos del Cliente):** Nombre completo, correo electrónico con verificación OTP de 6 dígitos, notas opcionales y casilla obligatoria de Habeas Data (Ley 1581 de 2012).
 - **Paso 5 (Resumen & Confirmación):** Ticket sastre, código `PF-8492`, botones para Google Calendar, descarga de archivo `.ics` y enlace firmado para cancelar o reprogramar.
 
 ### 2.2 App Móvil Interna para Barberos (`BarberMobileView.jsx`)
 - **En Silla Ahora:** Vista del cliente actual en atención, cronómetro de tiempo transcurrido y ficha privada de corte (degradado, navaja, sensibilidad).
-- **Acción Rápida Walk-in:** Registro de cliente que llega sin cita en solo 2 toques, bloqueando automáticamente el turno en la web pública.
+- **Acción Rápida Walk-in:** Registro de cliente que llega sin cita en solo 2 toques, bloqueando automáticamente la franja en la web pública.
 - **Modo Offline:** Simulador de estado online/offline con almacenamiento local en SQLite.
-- **Cierre de Servicio POS:** Cobro con métodos de pago de barrio (Efectivo con cálculo de cambio, Nequi, Daviplata, Datáfono), propina opcional y cálculo de comisión en vivo (50%).
+- **Cierre de Servicio POS:** Cobro con métodos de pago (Efectivo con cálculo de cambio, Nequi, Daviplata, Datáfono), productos de vitrina y nevera, propina opcional y cálculo de comisión en vivo (50%).
 
 ### 2.3 Panel del Administrador (`AdminDashboardView.jsx`)
 - **Métricas del Día:** Ocupación del local (84%), facturación discriminada por método de pago y liquidación estimada del equipo.

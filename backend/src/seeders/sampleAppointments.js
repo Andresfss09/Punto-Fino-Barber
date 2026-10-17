@@ -30,10 +30,10 @@ const seedAppointments = async () => {
 
     // Ensure clients exist
     const clientData = [
-      { name: 'Andrés Silva', email: 'andres.silva@gmail.com', phone: '3158901234', password: 'Password123!', role: 'cliente', isVerified: true },
-      { name: 'Santiago Osorio', email: 'santiago.osorio@gmail.com', phone: '3124567890', password: 'Password123!', role: 'cliente', isVerified: true },
-      { name: 'Mateo Morales', email: 'mateo.morales@gmail.com', phone: '3201234567', password: 'Password123!', role: 'cliente', isVerified: true },
-      { name: 'David Bermúdez', email: 'david.bermudez@gmail.com', phone: '3109876543', password: 'Password123!', role: 'cliente', isVerified: true },
+      { name: 'Andrés Silva', email: 'andres.silva@gmail.com', password: 'Password123!', role: 'cliente', isVerified: true },
+      { name: 'Santiago Osorio', email: 'santiago.osorio@gmail.com', password: 'Password123!', role: 'cliente', isVerified: true },
+      { name: 'Mateo Morales', email: 'mateo.morales@gmail.com', password: 'Password123!', role: 'cliente', isVerified: true },
+      { name: 'David Bermúdez', email: 'david.bermudez@gmail.com', password: 'Password123!', role: 'cliente', isVerified: true },
     ];
 
     const clients = [];

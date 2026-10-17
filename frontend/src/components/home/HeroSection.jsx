@@ -180,7 +180,7 @@ export default function HeroSection() {
                   </div>
                   <div className="flex items-start gap-3 text-[#dcdcdc]">
                     <CheckCircle2 size={18} className="text-[#B89758] shrink-0 mt-0.5" />
-                    <span><strong>Bebida de cortesía:</strong> Café recién colado, agua o jugo frío</span>
+                    <span><strong>Espacio Climatizado:</strong> Buena música, comodidad y la mejor vibra de Cali</span>
                   </div>
                 </div>
 
@@ -242,7 +242,7 @@ export default function HeroSection() {
         <div className="max-w-[1600px] mx-auto px-6 sm:px-12 lg:px-16 grid grid-cols-3 gap-6 text-center divide-x divide-white/10">
           <div>
             <div className="font-mono text-3xl sm:text-5xl lg:text-6xl text-white font-bold tracking-tight">
-              <AnimatedCounter value={8} />+
+              +<AnimatedCounter value={5} />
             </div>
             <div className="font-sans text-xs sm:text-sm uppercase tracking-wider text-[#9B988F] font-medium mt-2">
               Años de Experiencia

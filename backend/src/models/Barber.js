@@ -15,7 +15,7 @@ const scheduleSchema = new mongoose.Schema({
   },
   endTime: {
     type: String,
-    default: '20:00',
+    default: '20:30',
   },
   breakStart: {
     type: String,

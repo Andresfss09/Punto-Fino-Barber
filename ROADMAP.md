@@ -46,10 +46,10 @@ Dado que **el proyecto final no es para esa barbería**, se debe programar un ca
 
 ### 3. 🛠️ Nuevas Funcionalidades Recomendadas para la Barbería
 
-#### A. Recordatorios y Notificaciones Automáticas por WhatsApp
-- [ ] Integrar webhook / API (Twilio, Baileys o WhatsApp Cloud API) para enviar mensaje recordatorio 2 horas antes de la cita.
+#### A. Recordatorios y Notificaciones Automáticas por Correo
+- [ ] Enviar recordatorio automático por correo 2 horas antes de la cita con archivo .ics adjunto.
 - [ ] Mensaje instantáneo de confirmación con botón de ubicación en Google Maps.
-- [ ] Opción para que el cliente confirme o cancele directamente desde WhatsApp.
+- [ ] Opción para que el cliente confirme, reprograme o cancele directamente desde enlaces firmados de un solo uso.
 
 #### B. Módulo de Inventario & Venta de Productos (Mini-POS)
 - [ ] Registro de productos de barbería (ceras, pomadas, aceites, tratamientos, minoxidil).

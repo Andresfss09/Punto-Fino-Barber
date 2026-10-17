@@ -34,8 +34,8 @@ async function runTests() {
     }
   };
 
-  let brayanToken;
-  let brayanUser;
+  let staffToken;
+  let staffUser;
   let walkInAppointment;
 
   // TEST 1: Login de Barbero
@@ -44,7 +44,7 @@ async function runTests() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        phoneOrEmail: 'juandavid@puntofino.com',
+        identifier: 'juandavid@puntofino.com',
         password: 'Barbero2026!',
       }),
     });
@@ -53,9 +53,9 @@ async function runTests() {
     assert.strictEqual(res.status, 200, `Esperado 200, recibido ${res.status}`);
     assert(data.success);
     assert(data.token, 'Debe devolver JWT token');
-    brayanToken = data.token;
-    brayanUser = data.user;
-    assert(brayanUser.role === 'ADMIN' || brayanUser.role === 'BARBER', 'Debe ser ADMIN o BARBER');
+    staffToken = data.token;
+    staffUser = data.user;
+    assert(staffUser.role === 'ADMIN' || staffUser.role === 'BARBER', 'Debe ser ADMIN o BARBER');
   });
 
   // TEST 2: Vinculación de dispositivo móvil con biometría
@@ -64,11 +64,11 @@ async function runTests() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${brayanToken}`,
+        Authorization: `Bearer ${staffToken}`,
       },
       body: JSON.stringify({
-        deviceId: 'device-iphone15-brayan-cali',
-        deviceName: 'iPhone 15 Pro de Brayan (Silla 1)',
+        deviceId: 'device-staff-juandavid-cali',
+        deviceName: 'Dispositivo Móvil de Juan David (Silla 1)',
         biometricsEnabled: true,
       }),
     });
@@ -76,7 +76,7 @@ async function runTests() {
     const data = await res.json();
     assert.strictEqual(res.status, 200, `Esperado 200, recibido ${res.status}`);
     assert(data.success);
-    assert.strictEqual(data.session.deviceId, 'device-iphone15-brayan-cali');
+    assert.strictEqual(data.session.deviceId, 'device-staff-juandavid-cali');
     assert.strictEqual(data.session.biometricsEnabled, true);
     assert(data.refreshToken, 'Debe retornar refresh token');
   });
@@ -85,21 +85,21 @@ async function runTests() {
   await test('3. Consulta de agenda y resumen del día (GET /api/barbers/me/daily-summary)', async () => {
     const res = await fetch(`${API_URL}/barbers/me/daily-summary`, {
       headers: {
-        Authorization: `Bearer ${brayanToken}`,
+        Authorization: `Bearer ${staffToken}`,
       },
     });
 
     const data = await res.json();
     assert.strictEqual(res.status, 200, `Esperado 200, recibido ${res.status}`);
     assert(data.success);
-    assert(data.barber.nickname.includes('Juan David') || data.barber.nickname.includes('El Fino'));
+    assert(data.barber.nickname.includes('Juan David'));
     assert(data.stats, 'Debe incluir objeto de estadísticas');
     assert(Array.isArray(data.appointments), 'Debe devolver lista de citas');
   });
 
   // TEST 4: Registro rápido de cliente Walk-in en 2 toques
   const corteService = await prisma.service.findFirst({
-    where: { name: { contains: 'Corte Clásico' } },
+    where: { isActive: true },
   });
   assert(corteService);
 
@@ -108,18 +108,18 @@ async function runTests() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${brayanToken}`,
+        Authorization: `Bearer ${staffToken}`,
       },
       body: JSON.stringify({
         clientName: 'Don Jaime (Vecino Villacolombia)',
-        clientPhone: '3157891122',
-        serviceIds: [corteService.id],
+        clientEmail: 'jaime.vecino@cali.co',
+        serviceId: corteService.id,
         barberNotes: 'Fade #1 en sienes, cerquillo recto con navaja, remolino atrás a tijera.',
       }),
     });
 
     const data = await res.json();
-    assert.strictEqual(res.status, 201, `Esperado 201, recibido ${res.status}`);
+    assert.strictEqual(res.status, 201, `Esperado 201, recibido ${res.status}: ${JSON.stringify(data)}`);
     assert(data.success);
     assert(data.appointment.isWalkIn, 'isWalkIn debe ser true');
     assert.strictEqual(data.appointment.status, 'IN_PROGRESS', 'Debe quedar en status IN_PROGRESS (En silla)');
@@ -131,7 +131,7 @@ async function runTests() {
     const clientId = walkInAppointment.clientId || walkInAppointment.client.id;
     const res = await fetch(`${API_URL}/users/${clientId}/technical-notes`, {
       headers: {
-        Authorization: `Bearer ${brayanToken}`,
+        Authorization: `Bearer ${staffToken}`,
       },
     });
 
@@ -150,7 +150,7 @@ async function runTests() {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${brayanToken}`,
+        Authorization: `Bearer ${staffToken}`,
       },
       body: JSON.stringify({ technicalNotes: updatedFormula }),
     });
@@ -166,7 +166,7 @@ async function runTests() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${brayanToken}`,
+        Authorization: `Bearer ${staffToken}`,
       },
       body: JSON.stringify({
         paymentMethod: 'NEQUI',
@@ -203,4 +203,3 @@ runTests().catch((err) => {
   console.error('Error fatal ejecutando test suite:', err);
   process.exit(1);
 });
-

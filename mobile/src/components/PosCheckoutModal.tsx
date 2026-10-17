@@ -55,7 +55,7 @@ export const PosCheckoutModal: React.FC<PosCheckoutModalProps> = ({
             <View style={styles.header}>
               <View>
                 <Text style={styles.eyebrow}>COBRO EN SILLA · POS MÓVIL</Text>
-                <Text style={styles.title}>Cerrar y Cobrar Turno</Text>
+                <Text style={styles.title}>Cerrar y Cobrar Cita</Text>
                 <Text style={styles.subtitle}>{appointment.clientName} · {appointment.bookingCode}</Text>
               </View>
               <TouchableOpacity onPress={onClose} style={styles.closeBtn}>

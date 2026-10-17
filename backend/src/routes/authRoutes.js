@@ -4,14 +4,18 @@ const {
   login,
   getMe,
   registerStaff,
+  forgotPassword,
+  resetPassword,
   logout,
   registerDeviceSession,
 } = require('../controllers/authController');
 const { protect, authorize } = require('../middlewares/auth');
-const { authLimiter } = require('../middlewares/rateLimit');
+const { authLimiter, otpRateLimiter } = require('../middlewares/rateLimit');
 
 // Autenticación de personal
 router.post('/login', authLimiter, login);
+router.post('/forgot-password', otpRateLimiter, forgotPassword);
+router.post('/reset-password', authLimiter, resetPassword);
 router.get('/me', protect, getMe);
 router.post('/logout', protect, logout);
 router.post('/register-device', protect, registerDeviceSession);

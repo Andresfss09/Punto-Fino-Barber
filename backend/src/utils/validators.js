@@ -12,7 +12,6 @@ const validate = (req, res, next) => {
 exports.validateRegister = [
   check('name', 'El nombre es obligatorio').notEmpty(),
   check('email', 'Incluye un correo válido').isEmail(),
-  check('phone', 'El teléfono es obligatorio').notEmpty(),
   check('password', 'La contraseña debe tener al menos 6 caracteres').isLength({ min: 6 }),
   validate
 ];
@@ -25,7 +24,7 @@ exports.validateLogin = [
 
 exports.validateAppointment = [
   check('barberId', 'El ID del barbero es obligatorio').notEmpty(),
-  check('serviceIds', 'Debe seleccionar al menos un servicio').isArray({ min: 1 }),
+  check('serviceId', 'Debe seleccionar exactamente un servicio').notEmpty(),
   check('date', 'La fecha es obligatoria').notEmpty(),
   check('startTime', 'La hora de inicio es obligatoria').notEmpty(),
   validate

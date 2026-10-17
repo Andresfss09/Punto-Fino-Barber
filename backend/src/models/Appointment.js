@@ -16,10 +16,6 @@ const appointmentSchema = new mongoose.Schema(
       trim: true,
       lowercase: true,
     },
-    clientPhone: {
-      type: String,
-      trim: true,
-    },
     clientAddress: {
       type: String,
       trim: true,

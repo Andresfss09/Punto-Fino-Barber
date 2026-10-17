@@ -1,9 +1,8 @@
 /**
- * Motor de Cola Asíncrona de Correos Transaccionales "Punto Fino"
- * - Manejo con reintentos y retroceso exponencial (Exponential Backoff)
- * - Terna de correos al agendar: Cliente (.ics), Barbero (WhatsApp) y Admin (Ocupación)
- * - Notificaciones de reprogramación y cancelación por token
- * - Registro auditable permanente en tabla EmailAuditLog (Prisma)
+ * Motor de Cola Asíncrona de Correos Transaccionales y Notificaciones de Panel — Punto Fino (Ronda 2)
+ * - Comunicación exclusivamente por correo electrónico y paneles internos
+ * - Terna de correos al agendar: Cliente (.ics), Barbero y Admin
+ * - Creación automática de PanelNotification para el barbero y el administrador
  */
 
 const prisma = require('../config/prisma');
@@ -20,7 +19,7 @@ class EmailQueue {
     this.queue = [];
     this.isProcessing = false;
     this.maxAttempts = 3;
-    this.delays = [1000, 3000, 7000]; // ms entre intentos
+    this.delays = [1000, 3000, 7000];
     this.io = null;
   }
 
@@ -28,17 +27,11 @@ class EmailQueue {
     this.io = io;
   }
 
-  /**
-   * Encolar un trabajo de correo
-   */
   enqueue(job) {
     this.queue.push(job);
     this.processQueue();
   }
 
-  /**
-   * Procesador de la cola
-   */
   async processQueue() {
     if (this.isProcessing || this.queue.length === 0) return;
 
@@ -54,16 +47,17 @@ class EmailQueue {
         attachments: job.attachments || [],
       });
 
-      // Actualizar estado a SENT en base de datos
-      await prisma.emailAuditLog.update({
-        where: { id: job.logId },
-        data: {
-          status: 'SENT',
-          providerId: result.providerId,
-          sentAt: new Date(),
-          attempts: job.attempts,
-        },
-      });
+      if (job.logId) {
+        await prisma.emailAuditLog.update({
+          where: { id: job.logId },
+          data: {
+            status: 'SENT',
+            providerId: result.providerId,
+            sentAt: new Date(),
+            attempts: job.attempts,
+          },
+        });
+      }
 
       if (this.io) {
         this.io.emit('email:status_update', {
@@ -81,27 +75,30 @@ class EmailQueue {
         const nextAttempt = job.attempts + 1;
         const delay = this.delays[job.attempts - 1] || 5000;
 
-        await prisma.emailAuditLog.update({
-          where: { id: job.logId },
-          data: {
-            attempts: nextAttempt,
-            lastError: error.message,
-          },
-        });
+        if (job.logId) {
+          await prisma.emailAuditLog.update({
+            where: { id: job.logId },
+            data: {
+              attempts: nextAttempt,
+              lastError: error.message,
+            },
+          });
+        }
 
         setTimeout(() => {
           this.enqueue({ ...job, attempts: nextAttempt });
         }, delay);
       } else {
-        // Marcado como FAILED tras agotar reintentos
-        await prisma.emailAuditLog.update({
-          where: { id: job.logId },
-          data: {
-            status: 'FAILED',
-            lastError: error.message,
-            attempts: job.attempts,
-          },
-        });
+        if (job.logId) {
+          await prisma.emailAuditLog.update({
+            where: { id: job.logId },
+            data: {
+              status: 'FAILED',
+              lastError: error.message,
+              attempts: job.attempts,
+            },
+          });
+        }
 
         if (this.io) {
           this.io.emit('email:status_update', {
@@ -115,7 +112,6 @@ class EmailQueue {
       }
     } finally {
       this.isProcessing = false;
-      // Continuar con los siguientes trabajos en la cola
       if (this.queue.length > 0) {
         this.processQueue();
       }
@@ -123,10 +119,7 @@ class EmailQueue {
   }
 
   /**
-   * Disparar la terna de correos al confirmar una cita:
-   * 1. Al Cliente (con .ics adjunto)
-   * 2. Al Barbero (con link directo de WhatsApp)
-   * 3. Al Administrador (con métricas de ocupación del día)
+   * Disparar la terna de correos al confirmar una cita + notificaciones en panel
    */
   async enqueueBookingEmails(appointmentId) {
     try {
@@ -134,6 +127,7 @@ class EmailQueue {
         where: { id: appointmentId },
         include: {
           client: true,
+          service: true,
           barber: {
             include: { user: true },
           },
@@ -154,16 +148,36 @@ class EmailQueue {
         nickname: appointment.barber?.nickname || 'Barbero',
         email: appointment.barber?.user?.email,
       };
-      const services = appointment.items.map((i) => ({
-        name: i.service.name,
-        priceCOP: i.priceCOP,
-        durationMinutes: i.durationMinutes,
-      }));
 
-      // 1. Generar archivo .ics
+      const services = appointment.service
+        ? [{ name: appointment.service.name, priceCOP: appointment.service.priceCOP, durationMinutes: appointment.service.durationMinutes }]
+        : appointment.items.map((i) => ({
+            name: i.service.name,
+            priceCOP: i.priceCOP,
+            durationMinutes: i.durationMinutes,
+          }));
+
+      // Crear notificaciones en panel para Barbero y Admin
+      await prisma.panelNotification.createMany({
+        data: [
+          {
+            barberId: appointment.barberId,
+            roleTarget: 'BARBER',
+            title: `Nueva cita agendada [${appointment.bookingCode}]`,
+            body: `${client.name} reservó ${services[0]?.name || 'servicio'} en tu agenda.`,
+            type: 'NEW_BOOKING',
+          },
+          {
+            roleTarget: 'ADMIN',
+            title: `Reserva confirmada [${appointment.bookingCode}]`,
+            body: `${client.name} agendó con ${barber.name} (${services[0]?.name || 'servicio'}).`,
+            type: 'NEW_BOOKING',
+          },
+        ],
+      });
+
       const icsContent = generateICS(appointment, client, barber, services);
 
-      // Calcular ocupación estimada del día para el administrador
       const startOfDay = new Date(appointment.startTime);
       startOfDay.setHours(0, 0, 0, 0);
       const endOfDay = new Date(appointment.startTime);
@@ -181,17 +195,15 @@ class EmailQueue {
         occupancyPct: Math.min(Math.round((dayCount / 12) * 100), 100),
       };
 
-      // 2. Preparar los 3 mensajes
       const clientEmailContent = buildClientConfirmationEmail({ appointment, client, barber, services });
       const barberEmailContent = buildBarberNotificationEmail({ appointment, client, barber, services });
       const adminEmailContent = buildAdminNotificationEmail({ appointment, client, barber, services, todayStats });
 
       const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'admin@puntofino.com';
-      const clientTargetEmail = client.email || (client.phone ? `${client.phone.replace(/\D/g, '')}@sms.local` : null);
-      const barberTargetEmail = barber.email || 'brayan@puntofino.com';
+      const clientTargetEmail = client.email;
+      const barberTargetEmail = barber.email || 'juandavid@puntofino.com';
 
       const emailJobs = [
-        // Correo 1: Cliente
         {
           recipientType: 'CLIENT',
           to: clientTargetEmail,
@@ -205,15 +217,13 @@ class EmailQueue {
             },
           ],
         },
-        // Correo 2: Barbero
         {
           recipientType: 'BARBER',
           to: barberTargetEmail,
-          subject: `Nueva cita en tu silla: ${client.name} — [${appointment.bookingCode}]`,
+          subject: `Nueva cita en tu agenda: ${client.name} — [${appointment.bookingCode}]`,
           html: barberEmailContent.html,
           text: barberEmailContent.text,
         },
-        // Correo 3: Administrador
         {
           recipientType: 'ADMIN',
           to: adminEmail,
@@ -223,11 +233,9 @@ class EmailQueue {
         },
       ];
 
-      // 3. Crear registros en EmailAuditLog y encolar
       for (const emailJob of emailJobs) {
         if (!emailJob.to) continue;
 
-        // Verificar si ya existe log para evitar duplicados en reintentos
         let log = await prisma.emailAuditLog.findFirst({
           where: {
             appointmentId: appointment.id,
@@ -266,7 +274,7 @@ class EmailQueue {
   }
 
   /**
-   * Notificación cuando el cliente cancela vía enlace con token
+   * Notificación cuando se cancela una cita
    */
   async enqueueCancellationEmails(appointmentId) {
     try {
@@ -276,6 +284,24 @@ class EmailQueue {
       });
 
       if (!appointment) return;
+
+      await prisma.panelNotification.createMany({
+        data: [
+          {
+            barberId: appointment.barberId,
+            roleTarget: 'BARBER',
+            title: `Cita cancelada [${appointment.bookingCode}]`,
+            body: `La cita de ${appointment.client.name} ha sido cancelada.`,
+            type: 'CANCELLED',
+          },
+          {
+            roleTarget: 'ADMIN',
+            title: `Cita cancelada [${appointment.bookingCode}]`,
+            body: `${appointment.client.name} canceló su cita con ${appointment.barber?.nickname || 'barbero'}.`,
+            type: 'CANCELLED',
+          },
+        ],
+      });
 
       const subject = `Cita cancelada [${appointment.bookingCode}] · Punto Fino`;
       const html = `
@@ -290,7 +316,7 @@ class EmailQueue {
         { type: 'CLIENT', to: appointment.client.email },
         { type: 'BARBER', to: appointment.barber?.user?.email },
         { type: 'ADMIN', to: process.env.ADMIN_NOTIFICATION_EMAIL || 'admin@puntofino.com' },
-      ].filter(t => Boolean(t.to));
+      ].filter((t) => Boolean(t.to));
 
       for (const t of targets) {
         const log = await prisma.emailAuditLog.create({
@@ -320,20 +346,39 @@ class EmailQueue {
   }
 
   /**
-   * Notificación cuando el cliente reprograma vía token
+   * Notificación cuando se reprograma una cita
    */
   async enqueueRescheduleEmails(appointmentId) {
     try {
-      // Al reprogramar, reenviamos la confirmación actualizada con el nuevo .ics
+      const appointment = await prisma.appointment.findUnique({
+        where: { id: appointmentId },
+        include: { client: true, barber: true },
+      });
+      if (appointment) {
+        await prisma.panelNotification.createMany({
+          data: [
+            {
+              barberId: appointment.barberId,
+              roleTarget: 'BARBER',
+              title: `Cita reprogramada [${appointment.bookingCode}]`,
+              body: `${appointment.client.name} reprogramó su cita en tu agenda.`,
+              type: 'RESCHEDULED',
+            },
+            {
+              roleTarget: 'ADMIN',
+              title: `Cita reprogramada [${appointment.bookingCode}]`,
+              body: `${appointment.client.name} cambió la fecha/hora de su cita.`,
+              type: 'RESCHEDULED',
+            },
+          ],
+        });
+      }
       await this.enqueueBookingEmails(appointmentId);
     } catch (err) {
       console.error('[EmailQueue] Error reprogramando cita:', err);
     }
   }
 
-  /**
-   * Helper para esperar que la cola termine en tests
-   */
   async drain() {
     while (this.queue.length > 0 || this.isProcessing) {
       await new Promise((r) => setTimeout(r, 100));
@@ -341,7 +386,83 @@ class EmailQueue {
   }
 }
 
-// Instancia singleton
 const emailQueue = new EmailQueue();
+
+async function createPanelNotification(data) {
+  try {
+    return await prisma.panelNotification.create({
+      data: {
+        userId: data.userId || null,
+        barberId: data.barberId || null,
+        roleTarget: data.roleTarget || 'BARBER',
+        title: data.title,
+        body: data.body,
+        type: data.type || 'SYSTEM',
+      },
+    });
+  } catch (err) {
+    console.error('[EmailQueue] Error creando notificación de panel:', err);
+  }
+}
+
+async function sendReassignmentAlert(appointment, oldBarber, targetBarber, reason) {
+  try {
+    await prisma.panelNotification.createMany({
+      data: [
+        {
+          barberId: oldBarber.id,
+          roleTarget: 'BARBER',
+          title: `Cita reasignada [${appointment.bookingCode}]`,
+          body: `Tu cita con ${appointment.client?.name || 'el cliente'} fue reasignada a ${targetBarber.nickname || targetBarber.name}. Motivo: ${reason || 'Ajuste operativo'}.`,
+          type: 'REASSIGNED',
+        },
+        {
+          barberId: targetBarber.id,
+          roleTarget: 'BARBER',
+          title: `Nueva cita asignada [${appointment.bookingCode}]`,
+          body: `Se te ha asignado la cita de ${appointment.client?.name || 'el cliente'}. Motivo: ${reason || 'Ajuste operativo'}.`,
+          type: 'REASSIGNED',
+        },
+      ],
+    });
+
+    if (appointment.client?.email) {
+      emailQueue.enqueue({
+        recipientType: 'CLIENT',
+        to: appointment.client.email,
+        subject: `Actualización de barbero en tu cita — Punto Fino [${appointment.bookingCode}]`,
+        html: `<p>Hola ${appointment.client.name},</p><p>Te informamos que tu cita ha sido reasignada a <strong>${targetBarber.nickname || targetBarber.name}</strong> para garantizar tu atención puntual.</p><p>Horario: ${new Date(appointment.startTime).toLocaleString('es-CO', { timeZone: 'America/Bogota' })}</p>`,
+        text: `Hola ${appointment.client.name}, tu cita ${appointment.bookingCode} fue reasignada a ${targetBarber.nickname || targetBarber.name}.`,
+        attempts: 1,
+      });
+    }
+  } catch (err) {
+    console.error('[EmailQueue] Error enviando alerta de reasignación:', err);
+  }
+}
+
+async function sendBarberInvitationEmail({ to, name, inviteToken, invitedBy }) {
+  try {
+    const inviteUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/onboarding/barber?token=${inviteToken}`;
+    emailQueue.enqueue({
+      recipientType: 'BARBER',
+      to,
+      subject: `Invitación al equipo de Punto Fino`,
+      html: `<p>Hola ${name},</p><p>${invitedBy || 'El administrador'} te ha invitado al equipo de Punto Fino.</p><p><a href="${inviteUrl}">Completa tu perfil aquí</a></p>`,
+      text: `Hola ${name}, accede a este enlace para completar tu perfil: ${inviteUrl}`,
+      attempts: 1,
+    });
+  } catch (err) {
+    console.error('[EmailQueue] Error enviando invitación de barbero:', err);
+  }
+}
+
+emailQueue.createPanelNotification = createPanelNotification;
+emailQueue.sendReassignmentAlert = sendReassignmentAlert;
+emailQueue.sendBarberInvitationEmail = sendBarberInvitationEmail;
+
 module.exports = emailQueue;
+module.exports.createPanelNotification = createPanelNotification;
+module.exports.sendReassignmentAlert = sendReassignmentAlert;
+module.exports.sendBarberInvitationEmail = sendBarberInvitationEmail;
 

@@ -2,7 +2,12 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const { apiLimiter } = require('./middlewares/rateLimit');
+const { apiLimiter, contactRateLimiter } = require('./middlewares/rateLimit');
+const {
+  getInventory,
+  getBusinessSchedules,
+  submitContactMessage,
+} = require('./controllers/adminController');
 
 const app = express();
 
@@ -39,7 +44,12 @@ app.use(express.urlencoded({ extended: true }));
 if (process.env.NODE_ENV === 'development') app.use(morgan('dev'));
 app.use('/api/', apiLimiter);
 
-// Rutas
+// Rutas Públicas Adicionales (Catálogo de Productos, Horarios Oficiales y Formulario de Contacto)
+app.get('/api/products', getInventory);
+app.get('/api/schedules', getBusinessSchedules);
+app.post('/api/contact', contactRateLimiter, submitContactMessage);
+
+// Rutas Principales
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/appointments', require('./routes/appointmentRoutes'));
 app.use('/api/services', require('./routes/serviceRoutes'));

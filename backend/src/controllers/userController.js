@@ -14,7 +14,6 @@ exports.getAllUsers = async (req, res) => {
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
-        { phone: { contains: search } },
         { email: { contains: search, mode: 'insensitive' } },
       ];
     }
@@ -26,7 +25,6 @@ exports.getAllUsers = async (req, res) => {
         id: true,
         name: true,
         email: true,
-        phone: true,
         role: true,
         isActive: true,
         createdAt: true,
@@ -56,7 +54,6 @@ exports.getUserById = async (req, res) => {
         id: true,
         name: true,
         email: true,
-        phone: true,
         role: true,
         isActive: true,
         createdAt: true,
@@ -78,19 +75,19 @@ exports.getUserById = async (req, res) => {
 // @access  Private/Admin
 exports.updateUser = async (req, res) => {
   try {
-    const { role, isActive, name } = req.body;
+    const { role, isActive, name, email } = req.body;
     const user = await prisma.user.update({
       where: { id: req.params.id },
       data: {
         ...(role ? { role } : {}),
         ...(isActive !== undefined ? { isActive: Boolean(isActive) } : {}),
         ...(name ? { name } : {}),
+        ...(email ? { email: email.trim().toLowerCase() } : {}),
       },
       select: {
         id: true,
         name: true,
         email: true,
-        phone: true,
         role: true,
         isActive: true,
       },
@@ -111,7 +108,7 @@ exports.deleteUser = async (req, res) => {
     const user = await prisma.user.update({
       where: { id: req.params.id },
       data: { isActive: false },
-      select: { id: true, name: true, isActive: true },
+      select: { id: true, name: true, email: true, isActive: true },
     });
 
     return sendSuccess(res, 200, 'Usuario desactivado exitosamente.', { user });
@@ -132,7 +129,7 @@ exports.getTechnicalNotes = async (req, res) => {
         OR: [{ id }, { userId: id }],
       },
       include: {
-        user: { select: { id: true, name: true, phone: true } },
+        user: { select: { id: true, name: true, email: true } },
       },
     });
 

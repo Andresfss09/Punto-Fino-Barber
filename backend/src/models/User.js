@@ -16,11 +16,6 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       match: [/^\S+@\S+\.\S+$/, 'Email inválido'],
     },
-    phone: {
-      type: String,
-      required: [true, 'El teléfono es requerido'],
-      match: [/^[0-9]{10}$/, 'Teléfono debe tener 10 dígitos'],
-    },
     address: {
       type: String,
       default: '',
@@ -36,14 +31,6 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ['cliente', 'barbero', 'admin'],
       default: 'cliente',
-    },
-    avatar: {
-      type: String,
-      default: '',
-    },
-    avatarPublicId: {
-      type: String,
-      default: '',
     },
     isActive: {
       type: Boolean,
@@ -71,7 +58,6 @@ const userSchema = new mongoose.Schema(
     },
     notifications: {
       email: { type: Boolean, default: true },
-      whatsapp: { type: Boolean, default: false },
     },
   },
   {

@@ -1,10 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { createReview, getBarberReviews } = require('../controllers/reviewController');
-const { protect } = require('../middlewares/auth');
-const { authorize } = require('../middlewares/roles');
+const { getReviews, createReview } = require('../controllers/reviewController');
 
-router.get('/barber/:barberId', getBarberReviews);
-router.post('/', protect, authorize('cliente'), createReview);
+router.get('/', getReviews);
+router.post('/', createReview);
 
 module.exports = router;

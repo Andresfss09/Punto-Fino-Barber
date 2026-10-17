@@ -1,5 +1,5 @@
 // Prisma Schema para Punto Fino - Villacolombia (Santiago de Cali, Colombia)
-// Base de Datos: Neon Serverless PostgreSQL
+// Ronda 2: Cero teléfono, 1 servicio por cita, horarios oficiales, descansos, productos Rolda/Nevera, OTP y btree_gist
 
 generator client {
   provider = "prisma-client-js"
@@ -24,7 +24,7 @@ enum Role {
 }
 
 enum AppointmentStatus {
-  HOLD          // Bloqueo temporal atómico de 8 min mientras completa el checkout
+  HOLD          // Reserva temporal de 8 min en base de datos
   CONFIRMED     // Cita confirmada
   IN_PROGRESS   // Cliente en la silla
   COMPLETED     // Servicio finalizado y liquidado
@@ -49,14 +49,14 @@ enum InventoryMovementType {
 }
 
 // -------------------------------------------------------------
-// USUARIOS Y PERFILES
+// USUARIOS Y PERFILES (CERO TELÉFONO — IDENTIDAD POR CORREO)
 // -------------------------------------------------------------
 
 model User {
   id              String            @id @default(uuid())
-  email           String?           @unique
-  phone           String            @unique // Formato E.164: +573158294012
+  email           String            @unique
   name            String
+  phone           String?
   passwordHash    String?           // Nullable para clientes sin cuenta obligatoria
   role            Role              @default(CLIENT)
   isActive        Boolean           @default(true)
@@ -75,54 +75,81 @@ model User {
 }
 
 model BarberProfile {
-  id              String          @id @default(uuid())
-  userId          String          @unique
-  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  nickname        String          // Ej: "El Fino", "El Primo", "Junior"
-  bio             String?
-  // NOTA LEGAL: REVISAR CON CONTADOR / ABOGADO LABORAL (honorarios vs. salario)
-  commissionRate  Decimal         @default(0.50) @db.Decimal(5, 2)
-  isActive        Boolean         @default(true)
-  sortOrder       Int             @default(0)
+  id                    String          @id @default(uuid())
+  userId                String          @unique
+  user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nickname              String
+  bio                   String?
+  weeklyRestDay         Int             @default(3) // 0=Dom, 1=Lun (Emanuel), 3=Mié (Juan David y Juan Diego)
+  // NOTA LEGAL: REVISAR CON CONTADOR / ABOGADO LABORAL (liquidación de comisiones vs. nómina legal)
+  commissionScheme      String          @default("PERCENTAGE") // PERCENTAGE, FIXED, MIXED
+  commissionRate        Decimal         @default(0.50) @db.Decimal(5, 2)
+  productCommissionRate Decimal         @default(0.15) @db.Decimal(5, 2)
+  fixedBaseAmountCOP    Int             @default(0)
+  tipsPolicy            String          @default("100_BARBER")
+  isActive              Boolean         @default(true)
+  isArchived            Boolean         @default(false)
+  sortOrder             Int             @default(0)
+  inviteToken           String?         @unique
+  inviteExpiresAt       DateTime?
 
-  schedules       BarberSchedule[]
-  absences        BarberAbsence[]
-  appointments    Appointment[]   @relation("BarberAppointments")
-  slotHolds       SlotHold[]
-  settlements     CommissionSettlement[]
+  schedules             BarberSchedule[]
+  absences              BarberAbsence[]
+  appointments          Appointment[]   @relation("BarberAppointments")
+  slotHolds             SlotHold[]
+  settlements           CommissionSettlement[]
 
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
 
-  @@index([isActive, sortOrder])
+  @@index([isActive, isArchived, sortOrder])
 }
 
 model ClientProfile {
-  id              String          @id @default(uuid())
-  userId          String          @unique
-  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String          @id @default(uuid())
+  userId            String          @unique
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   preferredBarberId String?
-  loyaltyStamps   Int             @default(0) // Tarjeta de sellos digital (6to corte con descuento)
-  totalVisits     Int             @default(0)
-  totalSpentCOP   Int             @default(0)
-  // Notas privadas del barbero para cortes futuros
-  technicalNotes  String?         // Ej: "Fade #0.5 en sienes, cerquillo recto, piel sensible"
+  loyaltyStamps     Int             @default(0)
+  totalVisits       Int             @default(0)
+  totalSpentCOP     Int             @default(0)
+  technicalNotes    String?
 
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 }
 
 // -------------------------------------------------------------
-// HORARIOS Y DISPONIBILIDAD
+// HORARIOS OFICIALES DEL NEGOCIO Y EXCEPCIONES
 // -------------------------------------------------------------
+
+model BusinessSchedule {
+  id              String        @id @default(uuid())
+  dayOfWeek       Int           @unique // 0: Domingo, 1: Lunes, ..., 6: Sábado
+  dayName         String
+  openTime        String        // "08:00" los lunes, "09:00" martes a domingo
+  closeTime       String        // "20:30" lunes a sábado, "16:00" domingo
+  isOpen          Boolean       @default(true)
+  updatedAt       DateTime      @updatedAt
+}
+
+model ScheduleException {
+  id              String        @id @default(uuid())
+  date            String        @unique // Formato YYYY-MM-DD (America/Bogota)
+  isClosed        Boolean       @default(true)
+  openTime        String?
+  closeTime       String?
+  reason          String        // Ej: "Festivo Nacional", "Mantenimiento", "Horario Especial"
+  createdAt       DateTime      @default(now())
+}
 
 model BarberSchedule {
   id              String        @id @default(uuid())
   barberId        String
   barber          BarberProfile @relation(fields: [barberId], references: [id], onDelete: Cascade)
   dayOfWeek       Int           // 0: Domingo, 1: Lunes, ..., 6: Sábado
-  startTime       String        // "09:00"
-  endTime         String        // "20:00"
+  startTime       String        // "08:00" / "09:00"
+  endTime         String        // "20:30" / "16:00"
   isWorking       Boolean       @default(true)
 
   @@unique([barberId, dayOfWeek])
@@ -134,71 +161,84 @@ model BarberAbsence {
   barber          BarberProfile @relation(fields: [barberId], references: [id], onDelete: Cascade)
   startDate       DateTime
   endDate         DateTime
-  reason          String?       // "Descanso", "Cita médica", "Vacaciones"
+  reason          String?       // "Vacaciones", "Incapacidad", "Permiso", "Bloqueo puntual"
 
   @@index([barberId, startDate, endDate])
 }
 
 // -------------------------------------------------------------
-// SERVICIOS
+// SERVICIOS (UN SOLO SERVICIO POR RESERVA)
 // -------------------------------------------------------------
 
 model Service {
-  id              String          @id @default(uuid())
-  name            String          // Ej: "Corte Clásico Punto Fino"
-  slug            String          @unique
-  description     String
-  durationMinutes Int             @default(40)
-  priceCOP        Int             // Almacenado como entero en COP
-  requiresDeposit Boolean         @default(false)
-  depositAmountCOP Int            @default(0)
-  category        String          @default("Cortes") // Cortes, Barba, Faciales, Combos
-  isActive        Boolean         @default(true)
-  sortOrder       Int             @default(0)
+  id               String            @id @default(uuid())
+  name             String
+  slug             String            @unique
+  description      String
+  durationMinutes  Int               @default(35)
+  priceCOP         Int
+  isPopular        Boolean           @default(false) // Solo se muestra si el admin la activa
+  badgeLabel       String?
+  requiresDeposit  Boolean           @default(false)
+  depositAmountCOP Int               @default(0)
+  category         String            @default("Cortes")
+  imageUrl         String?
+  isActive         Boolean           @default(true)
+  sortOrder        Int               @default(0)
 
+  appointments     Appointment[]     @relation("ServiceAppointments")
   appointmentItems AppointmentItem[]
 
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 
-  @@index([isActive, category])
+  @@index([isActive, sortOrder])
 }
 
 // -------------------------------------------------------------
-// CITAS Y CONCURRENCIA (SLOTHOLD)
+// CITAS Y CONCURRENCIA (UN SERVICIO POR CITA + SLOTHOLD 8 MIN)
 // -------------------------------------------------------------
 
 model Appointment {
-  id              String            @id @default(uuid())
-  bookingCode     String            @unique // Ej: "PF-8492"
-  clientId        String
-  client          User              @relation("ClientAppointments", fields: [clientId], references: [id])
-  barberId        String
-  barber          BarberProfile     @relation("BarberAppointments", fields: [barberId], references: [id])
+  id                String               @id @default(uuid())
+  bookingCode       String               @unique
+  clientId          String
+  client            User                 @relation("ClientAppointments", fields: [clientId], references: [id])
+  barberId          String
+  barber            BarberProfile        @relation("BarberAppointments", fields: [barberId], references: [id])
   
-  startTime       DateTime          // Con zona horaria America/Bogota
-  endTime         DateTime
-  totalDurationMin Int
-  totalPriceCOP   Int
-  status          AppointmentStatus @default(CONFIRMED)
-  
-  clientNotes     String?           // Notas del cliente al agendar
-  barberNotes     String?           // Notas técnicas registradas en la silla
-  isWalkIn        Boolean           @default(false)
+  // Relación directa 1 cita = 1 único servicio
+  serviceId         String?
+  service           Service?             @relation("ServiceAppointments", fields: [serviceId], references: [id])
 
-  // Tokens criptográficos firmados de un solo uso para autogestión sin login
-  actionToken     String?           @unique
+  startTime         DateTime             // Almacenado en UTC, presentado en America/Bogota
+  endTime           DateTime
+  totalDurationMin  Int
+  totalPriceCOP     Int
+  tipCOP            Int                  @default(0)
+  paymentMethod     PaymentMethod?
+  status            AppointmentStatus    @default(CONFIRMED)
+  
+  clientNotes       String?
+  clientPhone       String?
+  barberNotes       String?
+  isWalkIn          Boolean              @default(false)
+
+  // Tokens criptográficos firmados de un solo uso para reprogramar/cancelar
+  actionToken       String?              @unique
   actionTokenExpiry DateTime?
 
-  items           AppointmentItem[]
-  transactions    CashTransaction[]
-  emailLogs       EmailAuditLog[]
-  slotHold        SlotHold?
+  items             AppointmentItem[]
+  consumedProducts  AppointmentProduct[]
+  transactions      CashTransaction[]
+  emailLogs         EmailAuditLog[]
+  slotHold          SlotHold?
 
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
 
   @@index([barberId, startTime])
+  @@index([clientId, startTime])
   @@index([startTime, status])
 }
 
@@ -212,14 +252,15 @@ model AppointmentItem {
   durationMinutes Int
 }
 
-// Bloqueo atómico temporal de cupo para evitar doble reserva (Anti-Doble Reserva)
 model SlotHold {
   id              String        @id @default(uuid())
   barberId        String
   barber          BarberProfile @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  serviceId       String?
+  clientEmail     String?
   startTime       DateTime
   endTime         DateTime
-  sessionId       String        // Cookie/Fingerprint de sesión del navegador
+  sessionId       String
   expiresAt       DateTime      // TTL de 8 minutos
   appointmentId   String?       @unique
   appointment     Appointment?  @relation(fields: [appointmentId], references: [id])
@@ -230,15 +271,42 @@ model SlotHold {
 }
 
 // -------------------------------------------------------------
-// CAJA, ARQUEO Y MÉTODOS DE PAGO DE BARRIO
+// VERIFICACIÓN DE CORREO (OTP 6 DÍGITOS) Y CONTACTO
+// -------------------------------------------------------------
+
+model EmailVerificationCode {
+  id              String        @id @default(uuid())
+  email           String
+  codeHash        String
+  expiresAt       DateTime
+  usedAt          DateTime?
+  attempts        Int           @default(0)
+  ipAddress       String?
+  createdAt       DateTime      @default(now())
+
+  @@index([email, expiresAt])
+}
+
+model ContactMessage {
+  id              String        @id @default(uuid())
+  name            String
+  email           String
+  subject         String?
+  message         String
+  isRead          Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+}
+
+// -------------------------------------------------------------
+// CAJA, ARQUEO Y MÉTODOS DE PAGO
 // -------------------------------------------------------------
 
 model CashSession {
   id              String            @id @default(uuid())
   openedByUserId  String
   openedBy        User              @relation(fields: [openedByUserId], references: [id])
-  openingBalance  Int               // Base de caja inicial en efectivo
-  closingBalance  Int?              // Arqueo físico al cierre
+  openingBalance  Int
+  closingBalance  Int?
   expectedBalance Int?
   difference      Int?
   notes           String?
@@ -266,24 +334,40 @@ model CashTransaction {
 }
 
 // -------------------------------------------------------------
-// PRODUCTOS E INVENTARIO
+// PRODUCTOS E INVENTARIO ("LO QUE USAMOS CONTIGO" - ROLDA & NEVERA)
 // -------------------------------------------------------------
 
 model Product {
-  id              String              @id @default(uuid())
-  name            String              // Ej: "Cera Pomada Fijación Fuerte Mate"
-  brand           String              // Ej: "Bandido / Suavecito"
-  description     String?
-  priceCOP        Int
-  costCOP         Int                 @default(0)
-  stock           Int                 @default(0)
-  minStock        Int                 @default(5)
-  isActive        Boolean             @default(true)
+  id                String               @id @default(uuid())
+  name              String               // Ej: "Gel Black", "Jugo Hit", "Cerveza Aguila Laton", "Curl Crem"
+  brand             String               // "ROLDA", "NEVERA"
+  category          String               @default("ROLDA") // "ROLDA", "NEVERA"
+  description       String?
+  priceCOP          Int
+  costCOP           Int                  @default(0)
+  stock             Int                  @default(0)
+  minStock          Int                  @default(5)
+  // NOTA LEGAL: REVISAR CON ABOGADO — Venta de alcohol prohibida a menores de edad (Ley 1801 de 2016)
+  containsAlcohol   Boolean              @default(false)
+  imageUrl          String?
+  monogram          String?              // "JH", "CA", "AG"
+  isActive          Boolean              @default(true)
 
-  movements       InventoryMovement[]
+  movements         InventoryMovement[]
+  appointmentUsages AppointmentProduct[]
 
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+}
+
+model AppointmentProduct {
+  id              String        @id @default(uuid())
+  appointmentId   String
+  appointment     Appointment   @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product       @relation(fields: [productId], references: [id])
+  quantity        Int           @default(1)
+  unitPriceCOP    Int
 }
 
 model InventoryMovement {
@@ -297,39 +381,78 @@ model InventoryMovement {
 }
 
 // -------------------------------------------------------------
-// LIQUIDACIÓN DE COMISIONES (HONORARIOS)
+// LIQUIDACIÓN DE COMISIONES (NÓMINA / HONORARIOS)
 // -------------------------------------------------------------
 
 model CommissionSettlement {
-  id                  String        @id @default(uuid())
-  barberId            String
-  barber              BarberProfile @relation(fields: [barberId], references: [id], onDelete: Cascade)
-  periodStart         DateTime
-  periodEnd           DateTime
-  totalServicesCOP    Int
-  commissionAmountCOP Int           // Por defecto el 50%
-  tipsCOP             Int           @default(0)
-  status              String        @default("PENDIENTE") // PENDIENTE, LIQUIDADO, PAGADO
-  paidAt              DateTime?
+  id                   String        @id @default(uuid())
+  barberId             String
+  barber               BarberProfile @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  periodStart          DateTime
+  periodEnd            DateTime
+  totalServicesCOP     Int
+  commissionAmountCOP  Int
+  productsAmountCOP    Int           @default(0)
+  productCommissionCOP Int           @default(0)
+  tipsCOP              Int           @default(0)
+  manualBonusCOP       Int           @default(0)
+  manualDeductionCOP   Int           @default(0)
+  adjustmentReason     String?       // Motivo obligatorio cuando hay ajuste manual
+  netPayableCOP        Int           @default(0)
+  snapshotJson         String?       // Copia inmutable de tarifas y cifras al aprobar
+  status               String        @default("BORRADOR") // BORRADOR, APROBADA, PAGADA
+  approvedAt           DateTime?
+  paidAt               DateTime?
   // NOTA: REVISAR CON CONTADOR / ABOGADO LABORAL
-  legalDisclaimer     String        @default("Liquidación de honorarios independientes por servicios de barbería.")
+  legalDisclaimer      String        @default("REVISAR CON CONTADOR: Liquidación de comisiones independientes.")
 
-  createdAt           DateTime      @default(now())
+  createdAt            DateTime      @default(now())
 
   @@index([barberId, periodStart, periodEnd])
 }
 
 // -------------------------------------------------------------
-// HABEAS DATA (LEY 1581 DE 2012 / DECRETO 1377 DE 2013)
+// AJUSTES GENERALES Y NOTIFICACIONES DE PANEL
+// -------------------------------------------------------------
+
+model PlatformSetting {
+  id                         String   @id @default("default")
+  cancellationWindowHours    Int      @default(3)
+  minAdvanceMinutes          Int      @default(30)
+  bufferMinutes              Int      @default(0)
+  maxActiveBookingsPerClient Int      @default(2)
+  allowClientProductAddOn    Boolean  @default(true)
+  adminNotificationEmails    String   @default("admin@puntofino.com")
+  holidayNote                String   @default("Confirmar si el local abre en días festivos de Colombia.")
+  updatedAt                  DateTime @updatedAt
+}
+
+model PanelNotification {
+  id              String        @id @default(uuid())
+  userId          String?
+  barberId        String?
+  roleTarget      String?       // "ADMIN", "BARBER"
+  title           String
+  body            String
+  type            String        // "NEW_BOOKING", "RESCHEDULED", "CANCELLED", "CONFLICT", "CONTACT"
+  isRead          Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+
+  @@index([barberId, isRead])
+  @@index([roleTarget, isRead])
+}
+
+// -------------------------------------------------------------
+// HABEAS DATA Y AUDITORÍA
 // -------------------------------------------------------------
 
 model HabeasDataConsent {
   id                String        @id @default(uuid())
   userId            String
   user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  policyVersion     String        // Ej: "v1.0-2026-10"
+  policyVersion     String
   acceptedTerms     Boolean       @default(true)
-  acceptedMarketing Boolean       @default(false) // Consentimiento separado para promociones
+  acceptedMarketing Boolean       @default(false)
   ipAddress         String
   userAgent         String
   consentedAt       DateTime      @default(now())
@@ -337,19 +460,15 @@ model HabeasDataConsent {
   @@index([userId, consentedAt])
 }
 
-// -------------------------------------------------------------
-// AUDITORÍA DE CORREOS TRANSACCIONALES
-// -------------------------------------------------------------
-
 model EmailAuditLog {
   id              String        @id @default(uuid())
-  appointmentId   String
-  appointment     Appointment   @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  appointmentId   String?
+  appointment     Appointment?  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
   recipientType   String        // CLIENT, BARBER, ADMIN
   toEmail         String
   subject         String
-  providerId      String?       // ID devuelto por Resend
-  status          String        @default("QUEUED") // QUEUED, SENT, DELIVERED, BOUNCED, FAILED
+  providerId      String?
+  status          String        @default("QUEUED")
   attempts        Int           @default(1)
   lastError       String?
   sentAt          DateTime?
@@ -358,21 +477,17 @@ model EmailAuditLog {
   @@index([appointmentId, status])
 }
 
-// -------------------------------------------------------------
-// SESIONES Y AUDITORÍA DE SEGURIDAD
-// -------------------------------------------------------------
-
 model StaffDeviceSession {
-  id              String        @id @default(uuid())
-  userId          String
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  deviceId        String        // UUID único generado por la app móvil o navegador
-  deviceName      String?       // Ej: "iPhone 15 Pro de Brayan", "Terminal Recepción"
-  refreshTokenHash String
-  biometricsEnabled Boolean     @default(false)
-  isRevoked       Boolean       @default(false)
-  lastActiveAt    DateTime      @default(now())
-  createdAt       DateTime      @default(now())
+  id                String        @id @default(uuid())
+  userId            String
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId          String
+  deviceName        String?
+  refreshTokenHash  String
+  biometricsEnabled Boolean       @default(false)
+  isRevoked         Boolean       @default(false)
+  lastActiveAt      DateTime      @default(now())
+  createdAt         DateTime      @default(now())
 
   @@unique([userId, deviceId])
 }
@@ -381,13 +496,30 @@ model AuditLog {
   id              String        @id @default(uuid())
   userId          String?
   user            User?         @relation(fields: [userId], references: [id])
-  action          String        // LOGIN, PRECIO_MODIFICADO, CITA_REASIGNADA, CIERRE_CAJA
-  resource        String        // "Appointment", "Service", "CashSession"
+  action          String
+  resource        String
   resourceId      String?
-  details         String?       // JSON serializado con cambios
+  details         String?
   ipAddress       String?
   createdAt       DateTime      @default(now())
 
   @@index([action, createdAt])
 }
 
+// -------------------------------------------------------------
+// OPINIONES Y RESEÑAS REALES DE CLIENTES
+// -------------------------------------------------------------
+
+model CustomerReview {
+  id              String        @id @default(uuid())
+  name            String
+  email           String
+  rating          Int           @default(5)
+  comment         String
+  serviceName     String?       // Opcional: servicio recibido
+  barberName      String?       // Opcional: barbero que lo atendió
+  isApproved      Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+
+  @@index([isApproved, createdAt])
+}

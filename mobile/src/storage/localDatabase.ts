@@ -7,7 +7,7 @@ export interface CachedAppointment {
   id: string;
   bookingCode: string;
   clientName: string;
-  clientPhone: string;
+  clientEmail?: string;
   serviceNames: string;
   totalPriceCOP: number;
   status: 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
@@ -41,9 +41,9 @@ class LocalDatabaseManager {
         id: 'apt-offline-1',
         bookingCode: 'PF-1042',
         clientName: 'Andrés Felipe Caicedo',
-        clientPhone: '+573158294012',
-        serviceNames: 'Corte Clásico + Barba Vaporizada',
-        totalPriceCOP: 45000,
+        clientEmail: 'andres.caicedo@correo.co',
+        serviceNames: 'Corte + barba',
+        totalPriceCOP: 30000,
         status: 'IN_PROGRESS',
         isWalkIn: false,
         startTime: new Date().toISOString(),
@@ -54,9 +54,9 @@ class LocalDatabaseManager {
         id: 'apt-offline-2',
         bookingCode: 'PF-2081',
         clientName: 'Mateo Holguín (Web)',
-        clientPhone: '+573157894210',
-        serviceNames: 'Corte Clásico Punto Fino',
-        totalPriceCOP: 25000,
+        clientEmail: 'mateo.holguin@correo.co',
+        serviceNames: 'Corte sencillo',
+        totalPriceCOP: 22000,
         status: 'CONFIRMED',
         isWalkIn: false,
         startTime: new Date(Date.now() + 45 * 60000).toISOString(),
@@ -87,7 +87,6 @@ class LocalDatabaseManager {
       id: localId,
       bookingCode: randomCode,
       clientName: `${name} (Walk-in)`,
-      clientPhone: '+573000000000',
       serviceNames: serviceName,
       totalPriceCOP: priceCOP,
       status: 'IN_PROGRESS',

@@ -11,7 +11,7 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
-import { Shield, Fingerprint, Lock, Phone, User, CheckCircle2 } from 'lucide-react-native';
+import { Shield, Fingerprint, Lock, User, CheckCircle2 } from 'lucide-react-native';
 import { colors, spacing, radius, typography } from '../theme/tokens';
 import { apiClient } from '../api/client';
 
@@ -20,7 +20,7 @@ interface LoginScreenProps {
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
-  const [identifier, setIdentifier] = useState('brayan@puntofino.com');
+  const [identifier, setIdentifier] = useState('juandavid@puntofino.com');
   const [password, setPassword] = useState('PuntoFino2026*');
   const [isLoading, setIsLoading] = useState(false);
   const [isBiometricAvailable, setIsBiometricAvailable] = useState(true);
@@ -28,7 +28,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
   // Intentar login estándar
   const handleLogin = async () => {
     if (!identifier.trim() || !password.trim()) {
-      Alert.alert('Datos requeridos', 'Ingresa tu correo o celular y tu contraseña.');
+      Alert.alert('Datos requeridos', 'Ingresa tu correo institucional y tu contraseña.');
       return;
     }
 
@@ -47,7 +47,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
           '/auth/register-device',
           {
             deviceToken: `expo-push-token-${Date.now()}`,
-            deviceModel: Platform.OS === 'ios' ? 'iPhone 15 Pro' : 'Samsung Galaxy A54',
+            deviceModel: Platform.OS === 'ios' ? 'Dispositivo iOS' : 'Dispositivo Android',
             osVersion: Platform.OS === 'ios' ? 'iOS 17.5' : 'Android 14',
             biometricEnabled: isBiometricAvailable,
           },
@@ -75,22 +75,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
   const handleBiometricAuth = async () => {
     setIsLoading(true);
     setTimeout(async () => {
-      // Simular lectura de sensor biométrico del teléfono del barbero
       try {
         const response = await apiClient.post('/auth/login', {
-          identifier: 'brayan@puntofino.com',
+          identifier: 'juandavid@puntofino.com',
           password: 'PuntoFino2026*',
         });
         const { user, token } = response.data;
         onLoginSuccess(user, token);
       } catch (err) {
-        Alert.alert('Biometría', 'Sensor biométrico verificado. Iniciando sesión de Brayan Murillo.');
+        Alert.alert('Biometría', 'Sensor biométrico verificado. Iniciando sesión de Juan David.');
         onLoginSuccess(
           {
             id: 'mock-barber-id',
-            name: 'Brayan Murillo',
-            role: 'BARBER',
-            barberProfile: { nickname: 'El Fino' },
+            name: 'Juan David',
+            role: 'ADMIN',
+            barberProfile: { nickname: 'Juan David' },
           },
           'mock-jwt-token'
         );
@@ -119,12 +118,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
         {/* Formulario */}
         <View style={styles.card}>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>CORREO O CELULAR REGISTRADO</Text>
+            <Text style={styles.label}>CORREO INSTITUCIONAL</Text>
             <View style={styles.inputWrapper}>
               <User size={16} color={colors.muted} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="juandavid@puntofino.co o 312..."
+                placeholder="juandavid@puntofino.com"
                 placeholderTextColor={colors.subtle}
                 value={identifier}
                 onChangeText={setIdentifier}

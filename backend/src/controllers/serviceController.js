@@ -53,7 +53,7 @@ exports.getServiceBySlug = async (req, res) => {
 // @access  Private (Admin)
 exports.createService = async (req, res) => {
   try {
-    const { name, slug, description, durationMinutes, priceCOP, category, requiresDeposit, depositAmountCOP } = req.body;
+    const { name, slug, description, durationMinutes, priceCOP, category, requiresDeposit, depositAmountCOP, imageUrl } = req.body;
 
     const existing = await prisma.service.findUnique({ where: { slug } });
     if (existing) {
@@ -68,6 +68,7 @@ exports.createService = async (req, res) => {
         durationMinutes: parseInt(durationMinutes, 10),
         priceCOP: parseInt(priceCOP, 10),
         category: category || 'Cortes',
+        imageUrl: imageUrl || null,
         requiresDeposit: Boolean(requiresDeposit),
         depositAmountCOP: depositAmountCOP ? parseInt(depositAmountCOP, 10) : 0,
       },

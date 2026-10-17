@@ -3,7 +3,7 @@
  * Compatible con Google Calendar, Apple Calendar, Outlook y dispositivos móviles.
  */
 
-const BUSINESS_CONFIG = require('../config/businessConfig');
+const { BUSINESS_CONFIG } = require('../config/businessConfig');
 
 const formatICSDate = (date) => {
   const d = new Date(date);
@@ -33,11 +33,11 @@ exports.generateICS = (appointment, client, barber, services) => {
   const description = [
     `Hola ${clientName}, tu cita en Punto Fino está confirmada.`,
     `Barbero: ${barberName}`,
-    `Servicios: ${servicesNames}`,
+    `Servicio: ${servicesNames}`,
     `Valor total: $ ${appointment.totalPriceCOP?.toLocaleString('es-CO') || '0'} COP`,
-    `Código de Reserva: ${bookingCode}`,
+    `Código de reserva: ${bookingCode}`,
     `Ubicación: ${location}`,
-    `Reprogramar o cancelar: ${manageUrl}`,
+    `Reprogramar o cancelar (hasta 3 horas antes): ${manageUrl}`,
   ].join('\\n');
 
   const icsContent = [
@@ -56,9 +56,9 @@ exports.generateICS = (appointment, client, barber, services) => {
     `LOCATION:${location}`,
     'STATUS:CONFIRMED',
     'BEGIN:VALARM',
-    'TRIGGER:-PT2H',
+    'TRIGGER:-PT3H',
     'ACTION:DISPLAY',
-    'DESCRIPTION:Recordatorio de cita en Punto Fino en 2 horas',
+    'DESCRIPTION:Recordatorio de cita en Punto Fino en 3 horas',
     'END:VALARM',
     'END:VEVENT',
     'END:VCALENDAR',
@@ -66,4 +66,3 @@ exports.generateICS = (appointment, client, barber, services) => {
 
   return icsContent;
 };
-

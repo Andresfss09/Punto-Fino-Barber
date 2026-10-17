@@ -1,58 +1,49 @@
 -- ========================================================
--- TRIADIX BARBER STUDIO · DATOS SEMILLA (SEED DATA)
+-- PUNTO FINO · DATOS SEMILLA (SEED DATA)
+-- Carrera 12 #53-51, Barrio Villacolombia, Cali
 -- ========================================================
 
--- 1. Insertar Catálogo Oficial de Servicios
+-- 1. Insertar Catálogo Oficial de Servicios (Todos los barberos realizan todos los servicios)
 insert into public.services (name, description, price, duration, category, is_popular, is_active, order_num) values
 (
-  'Combo Completo Triadix (Corte + Barba + Facial)',
-  'El servicio más completo: corte a tu gusto, arreglo y perfilado de barba a navaja, toalla caliente, exfoliación facial suave y mascarilla refrescante.',
-  55000,
-  60,
-  'Combos',
+  'Corte sencillo',
+  'Corte clásico o degradado a máquina y tijera, limpieza de contorno con navaja y peinado final.',
+  22000,
+  40,
+  'Cortes',
   true,
   true,
   1
 ),
 (
-  'Corte de Cabello + Arreglo de Barba',
-  'La combinación perfecta: corte de cabello con degradado fade o clásico, lavado capilar, toalla tibia y perfilado de barba a navaja con aceites hidratantes.',
-  34000,
+  'Corte + cejas',
+  'Corte completo a máquina y tijera acompañado de perfilado limpio de cejas con navaja.',
+  25000,
   45,
-  'Combos',
+  'Cortes',
   true,
   true,
   2
 ),
 (
-  'Corte de Cabello + Cejas',
-  'Corte moderno o clásico según tu estilo, perfilado limpio de cejas a navaja, lavado capilar y peinado con producto profesional.',
-  24000,
-  35,
-  'Cortes',
+  'Corte + barba',
+  'Servicio integral de corte de cabello y arreglo de barba delineada a navaja con toalla tibia.',
+  30000,
+  55,
+  'Combos',
   true,
   true,
   3
 ),
 (
-  'Arreglo y Perfilado de Barba',
-  'Delineado y arreglo de barba con navaja tradicional, toalla caliente para abrir los poros y aceites nutritivos para un afeitado suave.',
-  12000,
-  20,
-  'Barba & Cejas',
+  'Barba',
+  'Arreglo, rebajado y perfilado de barba con navaja libre y loción refrescante.',
+  10000,
+  25,
+  'Barba',
   false,
   true,
   4
-),
-(
-  'Perfilado de Cejas',
-  'Limpieza y perfilado limpio de cejas con navaja y tijera para un rostro pulido y natural.',
-  5000,
-  10,
-  'Barba & Cejas',
-  false,
-  true,
-  5
 )
 on conflict (name) do update set
   description = excluded.description,
@@ -60,45 +51,34 @@ on conflict (name) do update set
   duration = excluded.duration,
   category = excluded.category;
 
--- 2. Insertar Barberos Oficiales (Equipo Fundador Triadix)
-insert into public.barbers (id, name, email, phone, bio, specialties, rating_average, rating_count, total_clients, is_available) values
+-- 2. Insertar Barberos Oficiales de Punto Fino (Sin teléfono ni especialidades individuales)
+insert into public.barbers (id, name, email, bio, rest_day_of_week, is_available) values
 (
   'a1111111-1111-1111-1111-111111111111',
-  'Andrés Felipe Sarria',
-  'andres@triadix.co',
-  '3122398964',
-  'Cofundador de Triadix. Especialista en cortes modernos, degradados limpios a navaja y asesoría de estilo.',
-  array['Degradados Fade', 'Cortes Clásicos', 'Asesoría de Estilo'],
-  4.93,
-  58,
-  310,
+  'Juan David',
+  'juandavid@puntofino.com',
+  'Barbero y administrador de Punto Fino. Todos los servicios del catálogo con dedicación y detalle.',
+  3,
   true
 ),
 (
   'b2222222-2222-2222-2222-222222222222',
-  'Nicolás Chávez',
-  'nicolas@triadix.co',
-  '3122398964',
-  'Cofundador de Triadix y Director Creativo. Maestro en rituales clásicos a navaja, diseño geométrico de barba y bienestar dérmico con toallas calientes.',
-  array['Ritual de Barba', 'Navaja Libre', 'Vapor Ozono'],
-  5.00,
-  64,
-  280,
+  'Emanuel Torres',
+  'emanuel@puntofino.com',
+  'Barbero de Punto Fino. Atención dedicada en todos los servicios del catálogo.',
+  1,
   true
 ),
 (
   'c3333333-3333-3333-3333-333333333333',
-  'Luis De Ávila',
-  'luis@triadix.co',
-  '3122398964',
-  'Cofundador de Triadix y Director Técnico. Maestro de la textura y el degradado limpio, perfilado geométrico de cejas y vanguardia estética masculina.',
-  array['Fade Milimétrico', 'Perfilado Geométrico', 'Texturizado'],
-  4.90,
-  37,
-  190,
+  'Juan Diego',
+  'juandiego@puntofino.com',
+  'Barbero de Punto Fino. Atención dedicada en todos los servicios del catálogo.',
+  3,
   true
 )
 on conflict (id) do update set
   name = excluded.name,
+  email = excluded.email,
   bio = excluded.bio,
-  rating_average = excluded.rating_average;
+  rest_day_of_week = excluded.rest_day_of_week;

@@ -14,7 +14,6 @@ const seedUsers = async () => {
       admin = await User.create({
         name: 'Juan David',
         email: adminEmail,
-        phone: '3122398964',
         password: 'admin123456',
         role: 'admin',
         isVerified: true,
@@ -29,16 +28,13 @@ const seedUsers = async () => {
       barberUser1 = await User.create({
         name: 'Juan David',
         email: barber1Email,
-        phone: '3122398964',
         password: 'barbero123',
         role: 'barbero',
         isVerified: true,
       });
       await Barber.create({
         user: barberUser1._id,
-        bio: 'Barbero y Administrador de Punto Fino. Especialista en la Experiencia Punto Fino y degradados pulidos.',
-        specialties: ['degradado', 'corte clásico'],
-        rating: { average: 5.0, count: 42 },
+        bio: 'Barbero y Administrador de Punto Fino. Todos los servicios del catálogo con el mismo estándar.',
         isAvailable: true,
       });
       console.log('✅ Barbero Juan David creado: juandavid@puntofino.co / barbero123');
@@ -51,16 +47,13 @@ const seedUsers = async () => {
       barberUser2 = await User.create({
         name: 'Emanuel Torres',
         email: barber2Email,
-        phone: '3122398964',
         password: 'barbero123',
         role: 'barbero',
         isVerified: true,
       });
       await Barber.create({
         user: barberUser2._id,
-        bio: 'Barbero profesional de Punto Fino. Especialista en ritual de barba tradicional y cortes modernos.',
-        specialties: ['barba', 'corte clásico'],
-        rating: { average: 4.9, count: 38 },
+        bio: 'Barbero de Punto Fino. Todos los servicios del catálogo con el mismo estándar.',
         isAvailable: true,
       });
       console.log('✅ Barbero Emanuel Torres creado: emanuel@puntofino.co / barbero123');
@@ -73,16 +66,13 @@ const seedUsers = async () => {
       barberUser3 = await User.create({
         name: 'Juan Diego',
         email: barber3Email,
-        phone: '3122398964',
         password: 'barbero123',
         role: 'barbero',
         isVerified: true,
       });
       await Barber.create({
         user: barberUser3._id,
-        bio: 'Barbero profesional de Punto Fino. Especialista en corte a tijera y perfilado de cejas.',
-        specialties: ['degradado', 'cejas'],
-        rating: { average: 5.0, count: 45 },
+        bio: 'Barbero de Punto Fino. Todos los servicios del catálogo con el mismo estándar.',
         isAvailable: true,
       });
       console.log('✅ Barbero Juan Diego creado: juandiego@puntofino.co / barbero123');
@@ -95,7 +85,6 @@ const seedUsers = async () => {
       client = await User.create({
         name: 'Carlos Alberto Gómez',
         email: clientEmail,
-        phone: '3157894210',
         password: 'cliente123',
         role: 'cliente',
         isVerified: true,

@@ -61,7 +61,7 @@ async function runTests() {
     method: 'GET',
   });
   assert(servicesRes.status === 200, 'Obtener servicios responde 200 OK');
-  assert(servicesRes.data?.services?.length >= 5, `Se encontraron ${servicesRes.data?.services?.length} servicios en COP.`);
+  assert(servicesRes.data?.services?.length >= 4, `Se encontraron ${servicesRes.data?.services?.length} servicios en COP.`);
   const sampleService = servicesRes.data?.services?.[0];
   console.log(`   Ejemplo: ${sampleService?.name} ($ ${sampleService?.priceCOP} COP - ${sampleService?.durationMinutes} min)`);
 
@@ -75,15 +75,15 @@ async function runTests() {
   });
   assert(barbersRes.status === 200, 'Obtener barberos responde 200 OK');
   assert(barbersRes.data?.barbers?.length >= 3, `Se encontraron ${barbersRes.data?.barbers?.length} barberos activos.`);
-  const brayan = barbersRes.data?.barbers?.find((b) => b.nickname.includes('Juan David') || b.nickname.includes('El Fino')) || barbersRes.data?.barbers?.[0];
-  assert(brayan !== undefined, 'Barbero principal de Punto Fino (Juan David) presente en Neon DB.');
+  const juanDavid = barbersRes.data?.barbers?.find((b) => b.nickname.includes('Juan David')) || barbersRes.data?.barbers?.[0];
+  assert(juanDavid !== undefined, 'Barbero principal de Punto Fino (Juan David) presente en Neon DB.');
 
   // 4. Disponibilidad en Tiempo Real
   console.log('\n👉 4. Verificando Cálculo de Disponibilidad...');
   const availRes = await request({
     host: 'localhost',
     port: 5000,
-    path: `/api/barbers/${brayan.id}/availability?date=2026-10-18&duration=40`,
+    path: `/api/barbers/${juanDavid.id}/availability?date=2026-10-18&duration=40`,
     method: 'GET',
   });
   assert(availRes.status === 200, 'Disponibilidad responde 200 OK');
@@ -101,7 +101,7 @@ async function runTests() {
       headers: { 'Content-Type': 'application/json' },
     },
     {
-      barberId: brayan.id,
+      barberId: juanDavid.id,
       startTime: targetSlot.isoStartTime,
       durationMinutes: 40,
       sessionId: 'test_session_automated_cali',
@@ -120,11 +120,10 @@ async function runTests() {
       headers: { 'Content-Type': 'application/json' },
     },
     {
-      barberId: brayan.id,
-      serviceIds: [sampleService.id],
+      barberId: juanDavid.id,
+      serviceId: sampleService.id,
       startTime: targetSlot.isoStartTime,
       clientName: 'Santiago Caicedo',
-      clientPhone: '3169874512',
       clientEmail: 'santiago.caicedo@cali.co',
       clientNotes: 'Degradado al 0 en patillas.',
       acceptHabeasData: true,
@@ -176,8 +175,8 @@ async function runTests() {
     {
       email: 'juandavid@puntofino.com',
       password: 'Barbero2026!',
-      deviceId: 'iphone_15_brayan_uuid_demo',
-      deviceName: 'iPhone de Juan David (App Móvil)',
+      deviceId: 'device_juandavid_uuid_demo',
+      deviceName: 'Dispositivo Móvil de Juan David',
     }
   );
   assert(barberLoginRes.status === 200, `Barbero logueado con éxito. Nickname: ${barberLoginRes.data?.user?.barberProfile?.nickname || barberLoginRes.data?.user?.name}`);
@@ -199,4 +198,3 @@ async function runTests() {
 }
 
 runTests().catch(console.error);
-

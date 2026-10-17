@@ -33,7 +33,7 @@ export default function App() {
           onPress={() => setActiveTab('home')}
         >
           <Text style={[styles.tabButtonText, activeTab === 'home' && styles.tabButtonTextActive]}>
-            Silla & Turnos
+            Silla & Citas
           </Text>
         </TouchableOpacity>
 

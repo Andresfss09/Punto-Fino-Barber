@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Scissors, Sparkles, Clock, CheckCircle2, User, Phone, 
+  Scissors, Sparkles, Clock, CheckCircle2, User, Mail, 
   DollarSign, Plus, AlertCircle, Wifi, WifiOff, Camera, 
   ChevronRight, ArrowRight, Shield, Award, Check, RefreshCw,
   Fingerprint, Lock, ShieldCheck, Wallet, Receipt, FileText
@@ -40,9 +40,9 @@ export default function BarberMobileView() {
   // Formulario Walk-in
   const [walkInData, setWalkInData] = useState({
     name: '',
-    phone: '',
-    serviceName: 'Corte Clásico Punto Fino',
-    priceCOP: 25000,
+    email: '',
+    serviceName: 'Experiencia Punto Fino (Corte + Cejas)',
+    priceCOP: 24000,
   });
 
   // Estado POS Cobro
@@ -55,16 +55,16 @@ export default function BarberMobileView() {
     'Fade #0.5 en sienes con transición suave a tijera arriba. Cerquillo recto a navaja de un solo filo. Toalla al vapor tibia en nuca y cuello, evitar loción con alcohol por piel sensible.'
   );
 
-  // Citas del día del barbero Brayan Murillo "El Fino"
+  // Citas del día del barbero Juan David
   const [appointments, setAppointments] = useState([
     {
       id: 'apt-chair-1',
       clientId: 'usr-client-andres',
       time: 'Ahora',
       client: 'Andrés Felipe Caicedo',
-      phone: '315 489 1234',
-      service: 'Corte Clásico + Barba Vaporizada',
-      price: 45000,
+      email: 'andres.caicedo@cali.co',
+      service: 'Experiencia Punto Fino + Ritual de Barba',
+      price: 34000,
       status: 'IN_PROGRESS',
       isWalkIn: false,
       technicalNotes: 'Fade #0.5 en sienes, toalla bien tibia, evitar alcohol.',
@@ -74,9 +74,9 @@ export default function BarberMobileView() {
       clientId: 'usr-client-mateo',
       time: '11:15 AM',
       client: 'Mateo Holguín (Web)',
-      phone: '312 901 2345',
-      service: 'Corte Clásico Punto Fino',
-      price: 25000,
+      email: 'mateo.holguin@gmail.com',
+      service: 'Experiencia Punto Fino (Corte + Cejas)',
+      price: 24000,
       status: 'CONFIRMED',
       isWalkIn: false,
       technicalNotes: 'Degradado medio clásico.',
@@ -85,10 +85,10 @@ export default function BarberMobileView() {
       id: 'apt-3',
       clientId: 'usr-client-mono',
       time: '12:00 PM',
-      client: 'Carlos "El Mono" (Vecino)',
-      phone: '318 456 7890',
-      service: 'Perfilado de Barba',
-      price: 22000,
+      client: 'Carlos (Vecino)',
+      email: 'carlos.vecino@cali.co',
+      service: 'Ritual de Barba',
+      price: 15000,
       status: 'CONFIRMED',
       isWalkIn: true,
       technicalNotes: 'Barba cuadrada con navaja.',
@@ -107,9 +107,9 @@ export default function BarberMobileView() {
       clientId: 'usr-client-sebas',
       time: '02:30 PM',
       client: 'Sebastián Varela',
-      phone: '300 123 4567',
-      service: 'Combo Completo + Mascarilla',
-      price: 45000,
+      email: 'sebastian.varela@valle.gov.co',
+      service: 'Experiencia Platinium (VIP Todo Incluido)',
+      price: 55000,
       status: 'CONFIRMED',
       isWalkIn: false,
       technicalNotes: 'Piel reactiva en garganta.',
@@ -118,8 +118,8 @@ export default function BarberMobileView() {
 
   // Lista de completados para cálculo de comisiones
   const [completedList, setCompletedList] = useState([
-    { id: 'done-1', client: 'Julián Morales', service: 'Corte Clásico', price: 25000, tip: 3000, method: 'EFECTIVO' },
-    { id: 'done-2', client: 'Esteban Rios', service: 'Perfilado Barba', price: 22000, tip: 2000, method: 'NEQUI' },
+    { id: 'done-1', client: 'Julián Morales', service: 'Experiencia Punto Fino', price: 24000, tip: 3000, method: 'EFECTIVO' },
+    { id: 'done-2', client: 'Esteban Rios', service: 'Ritual de Barba', price: 15000, tip: 2000, method: 'NEQUI' },
   ]);
 
   const showToast = (msg) => {
@@ -136,7 +136,7 @@ export default function BarberMobileView() {
       id: `walkin-${Date.now()}`,
       time: 'Ahora',
       client: `${walkInData.name.trim()} (Walk-in)`,
-      phone: walkInData.phone || '300 000 0000',
+      email: walkInData.email || '',
       service: walkInData.serviceName,
       price: walkInData.priceCOP,
       status: 'IN_PROGRESS',
@@ -147,9 +147,9 @@ export default function BarberMobileView() {
     if (isOnline) {
       try {
         const payload = {
-          barberId: '24a50b5e-ee54-4618-9d97-4fbb55b61939', // Brayan Murillo en Neon DB
+          barberId: '24a50b5e-ee54-4618-9d97-4fbb55b61939',
           clientName: walkInData.name.trim(),
-          clientPhone: walkInData.phone || '310 999 8877',
+          clientEmail: walkInData.email || '',
           serviceName: walkInData.serviceName,
           priceCOP: walkInData.priceCOP,
         };
@@ -169,7 +169,7 @@ export default function BarberMobileView() {
 
     setAppointments([newApt, ...appointments.map(a => a.status === 'IN_PROGRESS' ? { ...a, status: 'CONFIRMED' } : a)]);
     setShowWalkInModal(false);
-    setWalkInData({ name: '', phone: '', serviceName: 'Corte Clásico Punto Fino', priceCOP: 25000 });
+    setWalkInData({ name: '', email: '', serviceName: 'Experiencia Punto Fino (Corte + Cejas)', priceCOP: 24000 });
   };
 
   // Finalizar y Cobrar en Silla
@@ -238,7 +238,7 @@ export default function BarberMobileView() {
     }, 900);
   };
 
-  // Cálculos de liquidación del barbero Brayan
+  // Cálculos de liquidación del barbero
   const totalProducedCOP = completedList.reduce((acc, c) => acc + c.price, 0);
   const totalTipsEarnedCOP = completedList.reduce((acc, c) => acc + c.tip, 0);
   const commissionEarnedCOP = Math.round(totalProducedCOP * 0.5); // 50% comisión
@@ -297,7 +297,7 @@ export default function BarberMobileView() {
         </div>
       </div>
 
-      {/* Selector de Pantallas del Celular */}
+      {/* Selector de Pantallas del Dispositivo Móvil */}
       <div className="flex justify-center gap-2">
         <button
           onClick={() => setCurrentScreen('silla')}
@@ -307,7 +307,7 @@ export default function BarberMobileView() {
               : 'bg-pf-surface text-pf-muted hover:text-white border border-white/10'
           }`}
         >
-          💺 Silla & Turnos (Barbero)
+          💺 Silla & Citas (Barbero)
         </button>
         <button
           onClick={() => setCurrentScreen('arqueo')}
@@ -331,7 +331,7 @@ export default function BarberMobileView() {
         </button>
       </div>
 
-      {/* Frame de Celular Fiel a React Native */}
+      {/* Frame de Dispositivo Móvil Fiel a React Native */}
       <div className="max-w-sm mx-auto bg-pf-carbon rounded-[42px] p-3 border-4 border-pf-elevated shadow-2xl relative overflow-hidden">
         {/* Dynamic Island / Notch */}
         <div className="w-28 h-4 bg-pf-surface rounded-full mx-auto mb-2 flex items-center justify-center">
@@ -339,19 +339,16 @@ export default function BarberMobileView() {
           <div className="w-2.5 h-2.5 rounded-full bg-pf-elevated" />
         </div>
 
-        {/* Pantalla del Teléfono */}
+        {/* Pantalla del Dispositivo */}
         <div className="bg-[#0D0E11] rounded-[32px] overflow-hidden border border-white/5 min-h-[660px] flex flex-col text-pf-bone text-xs relative">
           
           {/* HEADER DEL DISPOSITIVO MÓVIL */}
           <div className="p-4 bg-pf-surface/95 border-b border-white/5 space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full overflow-hidden border border-pf-terracota bg-pf-carbon flex items-center justify-center text-xs font-bold text-pf-terracota">
-                  BM
-                </div>
                 <div>
-                  <div className="font-display font-bold text-xs text-pf-bone">Brayan Murillo "El Fino"</div>
-                  <div className="text-[10px] text-pf-muted">Silla #1 · Santiago de Cali</div>
+                  <div className="font-display font-bold text-xs text-pf-bone">Juan David</div>
+                  <div className="text-[10px] text-pf-muted">Silla #1 · Villacolombia, Cali</div>
                 </div>
               </div>
               
@@ -379,7 +376,7 @@ export default function BarberMobileView() {
           </div>
 
           {/* ============================================== */}
-          {/* VISTA 1: SILLA & TURNOS (BARBERO)               */}
+          {/* VISTA 1: SILLA & CITAS (BARBERO)                */}
           {/* ============================================== */}
           {currentScreen === 'silla' && (
             <div className="p-3.5 flex-1 overflow-y-auto space-y-3.5">
@@ -559,7 +556,7 @@ export default function BarberMobileView() {
                 <div className="p-2.5 rounded-lg bg-pf-surface border border-white/5 space-y-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="font-bold text-pf-bone text-xs">Brayan "El Fino" (Silla 1)</div>
+                      <div className="font-bold text-pf-bone text-xs">Juan David (Silla 1)</div>
                       <div className="text-[10px] text-pf-muted">5 cortes · $185k producidos</div>
                     </div>
                     <div className="text-right font-mono text-pf-terracota font-bold text-xs">
@@ -569,7 +566,7 @@ export default function BarberMobileView() {
 
                   <div className="flex items-center justify-between border-t border-white/5 pt-1.5">
                     <div>
-                      <div className="font-bold text-pf-bone text-xs">Carlos "El Primo" (Silla 2)</div>
+                      <div className="font-bold text-pf-bone text-xs">Emanuel Torres (Silla 2)</div>
                       <div className="text-[10px] text-pf-muted">4 cortes · $140k producidos</div>
                     </div>
                     <div className="text-right font-mono text-pf-terracota font-bold text-xs">
@@ -579,7 +576,7 @@ export default function BarberMobileView() {
 
                   <div className="flex items-center justify-between border-t border-white/5 pt-1.5">
                     <div>
-                      <div className="font-bold text-pf-bone text-xs">Andrés "Junior" (Silla 3)</div>
+                      <div className="font-bold text-pf-bone text-xs">Juan Diego (Silla 3)</div>
                       <div className="text-[10px] text-pf-muted">3 cortes · $95k producidos</div>
                     </div>
                     <div className="text-right font-mono text-pf-terracota font-bold text-xs">
@@ -607,8 +604,8 @@ export default function BarberMobileView() {
                 <span className="text-[9px] font-mono text-pf-terracota font-bold uppercase tracking-wider">
                   DISPOSITIVO VINCULADO
                 </span>
-                <h3 className="font-display font-bold text-lg text-pf-bone">Brayan Murillo</h3>
-                <p className="text-[10px] text-pf-muted">Samsung Galaxy A54 · ID: Pf-Dev-Brayan</p>
+                <h3 className="font-display font-bold text-lg text-pf-bone">Juan David</h3>
+                <p className="text-[10px] text-pf-muted">Samsung Galaxy A54 · ID: Pf-Dev-JuanDavid</p>
               </div>
 
               <div className="p-3 bg-pf-surface rounded-xl border border-white/10 space-y-3">
@@ -707,12 +704,12 @@ export default function BarberMobileView() {
               </div>
 
               <div>
-                <label className="pf-label">Celular (Opcional para recibo)</label>
+                <label className="pf-label">Correo electrónico (Opcional para recibo)</label>
                 <input 
-                  type="tel" 
-                  placeholder="Ej: 315 789 2341"
-                  value={walkInData.phone}
-                  onChange={(e) => setWalkInData({ ...walkInData, phone: e.target.value })}
+                  type="email" 
+                  placeholder="cliente@correo.com"
+                  value={walkInData.email}
+                  onChange={(e) => setWalkInData({ ...walkInData, email: e.target.value })}
                   className="pf-input"
                 />
               </div>
@@ -723,16 +720,16 @@ export default function BarberMobileView() {
                   value={walkInData.serviceName}
                   onChange={(e) => {
                     const serv = e.target.value;
-                    let price = 25000;
-                    if (serv === 'Perfilado de Barba') price = 22000;
-                    if (serv === 'Combo Corte + Barba Vaporizada') price = 45000;
+                    let price = 24000;
+                    if (serv === 'Ritual de Barba') price = 15000;
+                    if (serv === 'Experiencia Punto Fino + Ritual de Barba') price = 34000;
                     setWalkInData({ ...walkInData, serviceName: serv, priceCOP: price });
                   }}
                   className="pf-input"
                 >
-                  <option value="Corte Clásico Punto Fino">Corte Clásico ($ 25.000 COP - 40 min)</option>
-                  <option value="Perfilado de Barba">Perfilado de Barba ($ 22.000 COP - 35 min)</option>
-                  <option value="Combo Corte + Barba Vaporizada">Combo Corte + Barba ($ 45.000 COP - 70 min)</option>
+                  <option value="Experiencia Punto Fino (Corte + Cejas)">Experiencia Punto Fino ($ 24.000 COP - 35 min)</option>
+                  <option value="Ritual de Barba">Ritual de Barba ($ 15.000 COP - 25 min)</option>
+                  <option value="Experiencia Punto Fino + Ritual de Barba">Experiencia Punto Fino + Barba ($ 34.000 COP - 45 min)</option>
                 </select>
               </div>
 
@@ -763,7 +760,7 @@ export default function BarberMobileView() {
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div>
                 <span className="text-[10px] font-mono text-pf-available font-bold">COBRO POS · PUNTO FINO</span>
-                <h3 className="font-display font-bold text-sm text-pf-bone">Cobrar Turno en Silla</h3>
+                <h3 className="font-display font-bold text-sm text-pf-bone">Cobrar Cita en Silla</h3>
               </div>
               <button onClick={() => setShowCheckoutModal(false)} className="text-pf-muted hover:text-white">✕</button>
             </div>
@@ -783,10 +780,8 @@ export default function BarberMobileView() {
               <label className="pf-label">Método de Pago</label>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { id: 'EFECTIVO', name: '💵 Efectivo' },
-                  { id: 'NEQUI', name: '📱 Nequi' },
-                  { id: 'DAVIPLATA', name: '🔴 Daviplata' },
-                  { id: 'DATAFONO', name: '💳 Datáfono Bold' },
+                  { id: 'EFECTIVO', name: '💵 Efectivo presencial' },
+                  { id: 'TRANSACCION', name: '📲 Transacción presencial' },
                 ].map((m) => (
                   <button
                     key={m.id}

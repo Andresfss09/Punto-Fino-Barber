@@ -1,8 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Phone, MessageCircle, Clock, Calendar, ArrowRight, ExternalLink, Compass, ShieldCheck } from 'lucide-react';
-import { BUSINESS_CONFIG } from '../../config/businessConfig';
+import {
+  MapPin,
+  Mail,
+  Clock,
+  ArrowRight,
+  ExternalLink,
+  Compass,
+  ShieldCheck,
+  Send,
+  CheckCircle2,
+  AlertCircle,
+} from 'lucide-react';
+import {
+  BUSINESS_CONFIG,
+  OFFICIAL_SCHEDULES,
+  formatTime12h,
+  getShopStatus,
+} from '../../config/businessConfig';
+import api from '../../services/api';
 
-// Estilo de mapa sobrio en tonos oscuros (Dark Barber Palette)
 const DARK_MAP_STYLES = [
   { elementType: 'geometry', stylers: [{ color: '#16181d' }] },
   { elementType: 'labels.text.stroke', stylers: [{ color: '#16181d' }] },
@@ -62,13 +78,47 @@ const DARK_MAP_STYLES = [
 export default function LocationSection() {
   const mapContainerRef = useRef(null);
   const sectionRef = useRef(null);
-  const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState(false);
   const [inView, setInView] = useState(false);
+  const [shopStatus, setShopStatus] = useState(() => getShopStatus());
+  const [schedules, setSchedules] = useState(OFFICIAL_SCHEDULES);
 
-  const { location, contact, hours } = BUSINESS_CONFIG;
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || import.meta.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-  const hasValidApiKey = Boolean(apiKey && apiKey !== 'YOUR_GOOGLE_MAPS_API_KEY' && !apiKey.includes('fake'));
+  // Estado del Formulario de Contacto Web
+  const [contactForm, setContactForm] = useState({
+    name: '',
+    email: '',
+    subject: '',
+    message: '',
+  });
+  const [contactLoading, setContactLoading] = useState(false);
+  const [contactSuccess, setContactSuccess] = useState('');
+  const [contactError, setContactError] = useState('');
+
+  const { location, contact } = BUSINESS_CONFIG;
+  const apiKey =
+    import.meta.env.VITE_GOOGLE_MAPS_API_KEY ||
+    import.meta.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const hasValidApiKey = Boolean(
+    apiKey && apiKey !== 'YOUR_GOOGLE_MAPS_API_KEY' && !apiKey.includes('fake')
+  );
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setShopStatus(getShopStatus());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    api
+      .get('/schedules')
+      .then(({ data }) => {
+        if (data?.data?.schedules?.length === 7) {
+          setSchedules(data.data.schedules);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Lazy loading con IntersectionObserver para cuidar los datos móviles
   useEffect(() => {
@@ -118,7 +168,6 @@ export default function LocationSection() {
           fullscreenControl: true,
         });
 
-        // Marcador personalizado de la marca Punto Fino (SVG sin el pin rojo genérico)
         const markerSvg = `
           <svg width="44" height="54" viewBox="0 0 44 54" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M22 0C9.85 0 0 9.85 0 22C0 36.5 22 54 22 54C22 54 44 36.5 44 22C44 9.85 34.15 0 22 0Z" fill="#18191E" stroke="#E15233" stroke-width="2.5"/>
@@ -154,10 +203,6 @@ export default function LocationSection() {
         marker.addListener('click', () => {
           infoWindow.open(map, marker);
         });
-
-        if (isMounted) {
-          setMapLoaded(true);
-        }
       } catch (err) {
         console.error('Error inicializando Google Maps:', err);
         if (isMounted) setMapError(true);
@@ -189,44 +234,96 @@ export default function LocationSection() {
     };
   }, [inView, hasValidApiKey, location]);
 
+  const handleContactSubmit = async (e) => {
+    e.preventDefault();
+    setContactError('');
+    setContactSuccess('');
+
+    if (
+      !contactForm.name.trim() ||
+      !contactForm.email.trim() ||
+      !contactForm.subject.trim() ||
+      !contactForm.message.trim()
+    ) {
+      setContactError('Por favor completa todos los campos del formulario.');
+      return;
+    }
+
+    setContactLoading(true);
+    try {
+      const { data } = await api.post('/contact', contactForm);
+      setContactSuccess(
+        data?.message ||
+          'Tu mensaje fue recibido por la administración de Punto Fino. Te responderemos a tu correo.'
+      );
+      setContactForm({ name: '', email: '', subject: '', message: '' });
+    } catch (err) {
+      setContactError(
+        err.response?.data?.message ||
+          'No pudimos enviar el mensaje en este momento. Intenta de nuevo en unos segundos.'
+      );
+    } finally {
+      setContactLoading(false);
+    }
+  };
+
+  // Ordenar horarios Lunes (1) -> Sábado (6) -> Domingo (0)
+  const orderedSchedules = [...schedules].sort((a, b) => {
+    const orderA = a.dayOfWeek === 0 ? 7 : a.dayOfWeek;
+    const orderB = b.dayOfWeek === 0 ? 7 : b.dayOfWeek;
+    return orderA - orderB;
+  });
+
   return (
-    <section 
-      ref={sectionRef} 
-      id="como-llegar" 
+    <section
+      ref={sectionRef}
+      id="como-llegar"
       className="py-24 sm:py-32 bg-[#0b0c0e] border-b border-white/10 text-white scroll-mt-24 relative"
     >
-      {/* Anchor de compatibilidad */}
       <span id="ubicacion" className="absolute -top-24 left-0"></span>
 
-      <div className="max-w-[1600px] w-full mx-auto px-6 sm:px-10 lg:px-16">
+      <div className="max-w-[1600px] w-full mx-auto px-6 sm:px-10 lg:px-16 space-y-12">
         {/* Encabezado de Sección */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-white/10 pb-8 mb-12">
+        <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-white/10 pb-8">
           <div>
-            <div className="flex items-center gap-2.5 mb-3">
-              <span className="w-2.5 h-2.5 bg-[#E15233] rounded-none"></span>
-              <span className="font-mono text-xs sm:text-sm uppercase tracking-[0.2em] text-[#E15233] font-bold">
-                06 · CÓMO LLEGAR & SEDE
-              </span>
-            </div>
-            <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl text-white font-bold tracking-tight leading-tight">
-              Sede Villacolombia · Cali
+            <span className="font-sans text-xs text-[#E15233] font-semibold block mb-2">
+              Ubicación, horarios oficiales y contacto
+            </span>
+            <h2 className="font-display text-4xl sm:text-5xl text-white font-bold tracking-tight leading-tight">
+              Cómo llegar a Punto Fino
             </h2>
           </div>
           <p className="font-sans text-sm sm:text-base text-[#9B988F] max-w-lg mt-4 md:mt-0 leading-relaxed">
-            Te esperamos en nuestra sede de la Carrera 12 en el tradicional barrio Villacolombia. Espacio climatizado, música selecta y atención puntual con cita reservada.
+            Te esperamos en nuestra sede única de la Carrera 12 #53-51 en el barrio Villacolombia, Santiago de Cali. Atención los 7 días de la semana.
           </p>
         </div>
 
-        {/* Grid Principal: Info / Referencias / Mapa */}
+        {/* Grid Principal: Info + Horarios / Mapa */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-          
-          {/* Tarjeta de Información y Referencias (5 columnas) */}
+          {/* Tarjeta de Información y Horarios de los 7 Días (5 columnas) */}
           <div className="lg:col-span-5 bg-[#111215] border border-white/10 rounded-md p-6 sm:p-8 flex flex-col justify-between space-y-7 shadow-xl">
             {/* Dirección y Sede */}
             <div className="space-y-4">
-              <span className="font-mono text-[11px] uppercase tracking-wider text-[#B89758] font-bold block">
-                Dirección Oficial
-              </span>
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-sans text-xs text-[#B89758] font-semibold">
+                  Dirección oficial
+                </span>
+                <span
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-sans font-medium ${
+                    shopStatus.isOpen
+                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                      : 'bg-white/5 text-[#9B988F] border border-white/10'
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      shopStatus.isOpen ? 'bg-emerald-400 animate-pulse' : 'bg-[#6A6862]'
+                    }`}
+                  />
+                  {shopStatus.label}
+                </span>
+              </div>
+
               <div className="flex items-start gap-3.5">
                 <div className="w-10 h-10 rounded-md bg-[#18191E] border border-white/10 flex items-center justify-center text-[#E15233] shrink-0 mt-0.5">
                   <MapPin size={20} />
@@ -239,31 +336,29 @@ export default function LocationSection() {
                     {location.address}
                   </p>
                   <p className="font-sans text-xs text-[#9B988F]">
-                    {location.neighborhood} · {location.city}, {location.department}
+                    Barrio {location.neighborhood} · {location.city}, {location.department}
                   </p>
                 </div>
               </div>
 
-              {/* Botones de Acción */}
+              {/* Botones de Acción (Google Maps y Correo) */}
               <div className="pt-2 flex flex-wrap gap-3">
                 <a
                   href={location.googleMapsDirectionsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-white hover:bg-[#EFECE4] text-black font-sans font-bold text-xs uppercase tracking-wider px-4 py-2.5 rounded-md inline-flex items-center gap-2 transition-all shadow-sm"
+                  className="bg-white hover:bg-[#EFECE4] text-black font-sans font-semibold text-xs px-4 py-2.5 rounded-md inline-flex items-center gap-2 transition-all shadow-sm"
                 >
                   <ExternalLink size={13} />
                   <span>Abrir en Google Maps</span>
                 </a>
 
                 <a
-                  href={contact.whatsappUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href="#contacto"
                   className="bg-[#18191E] hover:bg-[#22242B] text-white border border-white/10 font-sans font-medium text-xs px-4 py-2.5 rounded-md inline-flex items-center gap-2 transition-all"
                 >
-                  <MessageCircle size={14} className="text-[#25D366]" />
-                  <span>WhatsApp</span>
+                  <Mail size={14} className="text-[#B89758]" />
+                  <span>Escribir al administrador</span>
                 </a>
               </div>
             </div>
@@ -272,12 +367,12 @@ export default function LocationSection() {
             <div className="pt-5 border-t border-white/10 space-y-3">
               <div className="flex items-center gap-2">
                 <Compass size={14} className="text-[#B89758]" />
-                <span className="font-mono text-[11px] uppercase tracking-wider text-[#B89758] font-bold">
-                  Referencias para llegar
+                <span className="font-sans text-xs text-[#B89758] font-semibold">
+                  Referencias para llegar a Villacolombia
                 </span>
               </div>
               <ul className="space-y-2 text-xs font-sans text-[#cccccc]">
-                {location.references.map((ref, idx) => (
+                {(location.references || location.arrivalReferences || []).map((ref, idx) => (
                   <li key={idx} className="flex items-start gap-2 leading-relaxed">
                     <span className="text-[#E15233] font-bold shrink-0">•</span>
                     <span>{ref}</span>
@@ -286,34 +381,53 @@ export default function LocationSection() {
               </ul>
             </div>
 
-            {/* Horarios de Atención */}
+            {/* Horarios Oficiales (7 días con Hoy resaltado) */}
             <div className="pt-5 border-t border-white/10 space-y-3">
-              <div className="flex items-center gap-2">
-                <Clock size={14} className="text-[#B89758]" />
-                <span className="font-mono text-[11px] uppercase tracking-wider text-[#B89758] font-bold">
-                  Horarios de Atención
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Clock size={14} className="text-[#B89758]" />
+                  <span className="font-sans text-xs text-[#B89758] font-semibold">
+                    Horarios oficiales de atención
+                  </span>
+                </div>
+                <span className="text-[11px] font-sans text-[#9B988F]">
+                  {shopStatus.detail}
                 </span>
               </div>
+
               <div className="divide-y divide-white/5 font-sans text-xs">
-                <div className="py-2 flex justify-between items-center">
-                  <span className="text-[#9B988F]">Lunes</span>
-                  <span className="font-mono text-white font-medium bg-[#18191E] px-2.5 py-0.5 rounded border border-white/10">
-                    {hours.monday}
-                  </span>
-                </div>
-                <div className="py-2 flex justify-between items-center">
-                  <span className="text-[#9B988F]">Martes a Sábado</span>
-                  <span className="font-mono text-white font-medium bg-[#18191E] px-2.5 py-0.5 rounded border border-white/10">
-                    {hours.tuesdayToSaturday}
-                  </span>
-                </div>
-                <div className="py-2 flex justify-between items-center">
-                  <span className="text-[#9B988F]">Domingos</span>
-                  <span className="font-mono text-[#B89758] font-bold bg-[#18191E] px-2.5 py-0.5 rounded border border-[#B89758]/30">
-                    {hours.sunday}
-                  </span>
-                </div>
+                {orderedSchedules.map((sched) => {
+                  const isToday = shopStatus.todayDayOfWeek === sched.dayOfWeek;
+                  return (
+                    <div
+                      key={sched.dayOfWeek}
+                      className={`py-2 px-2.5 flex justify-between items-center rounded ${
+                        isToday ? 'bg-[#18191E] border border-[#B89758]/40 text-white font-semibold' : ''
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span className={isToday ? 'text-white' : 'text-[#9B988F]'}>
+                          {sched.dayName}
+                        </span>
+                        {isToday && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#B89758]/20 text-[#B89758] font-semibold">
+                            Hoy
+                          </span>
+                        )}
+                      </span>
+                      <span className="tabular-nums text-white font-medium">
+                        {sched.isOpen
+                          ? `${formatTime12h(sched.openTime)} a ${formatTime12h(sched.closeTime)}`
+                          : 'Cerrado'}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
+
+              <p className="text-[11px] text-[#9B988F] pt-1 leading-relaxed">
+                Nota: Los días festivos abrimos en jornada de domingo (9:00 a. m. a 4:00 p. m.). Las excepciones y cierres especiales se gestionan desde el panel del administrador.
+              </p>
             </div>
 
             {/* Aviso de Privacidad y Cookies de Terceros */}
@@ -324,18 +438,15 @@ export default function LocationSection() {
           </div>
 
           {/* Contenedor del Mapa / Respaldo Elegante (7 columnas) */}
-          <div className="lg:col-span-7 bg-[#111215] border border-white/10 rounded-md overflow-hidden relative min-h-[420px] lg:min-h-full flex flex-col shadow-2xl">
-            {/* Si la API key está disponible y no hay error, renderiza el mapa de Google */}
+          <div className="lg:col-span-7 bg-[#111215] border border-white/10 rounded-md overflow-hidden relative min-h-[460px] lg:min-h-full flex flex-col shadow-2xl">
             {hasValidApiKey && !mapError ? (
-              <div 
-                ref={mapContainerRef} 
-                className="w-full h-full min-h-[460px] bg-[#16181d]" 
+              <div
+                ref={mapContainerRef}
+                className="w-full h-full min-h-[460px] bg-[#16181d]"
               />
             ) : (
-              /* Respaldo elegante con coordenadas exactas, textura sobria y marcador de marca */
               <div className="w-full h-full min-h-[460px] p-8 sm:p-12 flex flex-col justify-between relative bg-gradient-to-br from-[#16181D] via-[#111215] to-[#0B0C0E]">
-                {/* Patrón reticular de fondo */}
-                <div 
+                <div
                   className="absolute inset-0 opacity-15 pointer-events-none"
                   style={{
                     backgroundImage: `radial-gradient(rgba(255, 255, 255, 0.2) 1px, transparent 1px)`,
@@ -343,20 +454,18 @@ export default function LocationSection() {
                   }}
                 />
 
-                {/* Badge Superior */}
                 <div className="relative z-10 flex items-center justify-between border-b border-white/10 pb-4">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span className="font-mono text-xs uppercase tracking-wider text-[#cccccc]">
-                      Ubicación Verificada en Cali
+                    <span className="font-sans text-xs text-[#cccccc] font-medium">
+                      Ubicación verificada en Cali
                     </span>
                   </div>
-                  <span className="font-mono text-xs text-[#B89758] bg-[#18191E] border border-white/10 px-2.5 py-1 rounded">
+                  <span className="font-sans text-xs text-[#B89758] bg-[#18191E] border border-white/10 px-2.5 py-1 rounded tabular-nums">
                     {location.coordinates.lat}° N, {Math.abs(location.coordinates.lng)}° W
                   </span>
                 </div>
 
-                {/* Marcador Central de Autor */}
                 <div className="relative z-10 my-auto text-center py-8">
                   <div className="w-20 h-20 rounded-full bg-[#18191E] border-2 border-[#E15233] flex items-center justify-center mx-auto mb-4 shadow-[0_0_30px_rgba(225,82,51,0.25)]">
                     <MapPin size={36} className="text-[#E15233]" />
@@ -367,30 +476,140 @@ export default function LocationSection() {
                   <p className="font-sans text-sm text-[#9B988F] max-w-sm mx-auto leading-relaxed">
                     Barrio Villacolombia, Comuna 8 · Santiago de Cali
                   </p>
-                  <p className="font-mono text-xs text-[#B89758] mt-2">
+                  <p className="font-sans text-xs text-[#B89758] mt-2 font-medium">
                     Punto Fino · Corte & Cuidado Masculino
                   </p>
                 </div>
 
-                {/* Barra Inferior con CTA directo */}
                 <div className="relative z-10 pt-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <span className="text-xs text-[#9B988F] font-sans text-center sm:text-left">
-                    ¿Vas en camino? Te guiamos paso a paso con Google Maps o Waze.
+                    ¿Vas en camino? Abre las indicaciones directas hacia Carrera 12 #53-51.
                   </span>
                   <a
                     href={location.googleMapsDirectionsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full sm:w-auto bg-[#E15233] hover:bg-[#C44327] text-white font-sans font-bold text-xs uppercase tracking-wider px-5 py-3 rounded-md inline-flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 shrink-0"
+                    className="w-full sm:w-auto bg-[#E15233] hover:bg-[#C44327] text-white font-sans font-semibold text-xs px-5 py-3 rounded-md inline-flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 shrink-0"
                   >
-                    <span>Abrir Indicaciones</span>
+                    <span>Abrir indicaciones</span>
                     <ArrowRight size={14} />
                   </a>
                 </div>
               </div>
             )}
           </div>
+        </div>
 
+        {/* Formulario de Contacto Web Directo al Administrador */}
+        <div
+          id="contacto"
+          className="bg-[#111215] border border-white/10 rounded-md p-6 sm:p-10 shadow-xl scroll-mt-28"
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="lg:col-span-5 space-y-3">
+              <span className="font-sans text-xs text-[#B89758] font-semibold block">
+                Canal oficial de comunicación
+              </span>
+              <h3 className="font-display text-2xl sm:text-3xl font-bold text-white">
+                Escríbenos directamente
+              </h3>
+              <p className="font-sans text-sm text-[#9B988F] leading-relaxed">
+                ¿Tienes alguna consulta sobre tu cita, nuestros productos Rolda o el ejercicio de tus derechos de Habeas Data? Envíanos un mensaje y el administrador te responderá a tu correo electrónico.
+              </p>
+              <div className="pt-2 text-xs font-sans text-[#cccccc] space-y-1">
+                <p>
+                  <strong className="text-white">Correo de contacto:</strong> {contact.email}
+                </p>
+                <p>
+                  <strong className="text-white">Sede:</strong> {location.fullAddress}
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleContactSubmit} className="lg:col-span-7 space-y-4">
+              {contactSuccess && (
+                <div className="p-4 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-sans flex items-start gap-2.5">
+                  <CheckCircle2 size={16} className="shrink-0 mt-0.5 text-emerald-400" />
+                  <span>{contactSuccess}</span>
+                </div>
+              )}
+
+              {contactError && (
+                <div className="p-4 rounded-md bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-sans flex items-start gap-2.5">
+                  <AlertCircle size={16} className="shrink-0 mt-0.5 text-rose-400" />
+                  <span>{contactError}</span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-sans font-medium text-[#cccccc] mb-1.5">
+                    Nombre completo
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={contactForm.name}
+                    onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                    placeholder="Ej. Andrés Felipe"
+                    className="w-full bg-[#16181D] border border-white/15 focus:border-[#B89758] rounded-md px-3.5 py-2.5 text-sm text-white placeholder-[#6A6862] outline-none transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-sans font-medium text-[#cccccc] mb-1.5">
+                    Correo electrónico
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={contactForm.email}
+                    onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                    placeholder="tu@correo.com"
+                    className="w-full bg-[#16181D] border border-white/15 focus:border-[#B89758] rounded-md px-3.5 py-2.5 text-sm text-white placeholder-[#6A6862] outline-none transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-sans font-medium text-[#cccccc] mb-1.5">
+                  Asunto
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={contactForm.subject}
+                  onChange={(e) => setContactForm({ ...contactForm, subject: e.target.value })}
+                  placeholder="Consulta sobre reserva, horarios o productos"
+                  className="w-full bg-[#16181D] border border-white/15 focus:border-[#B89758] rounded-md px-3.5 py-2.5 text-sm text-white placeholder-[#6A6862] outline-none transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-sans font-medium text-[#cccccc] mb-1.5">
+                  Mensaje
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  value={contactForm.message}
+                  onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
+                  placeholder="Escribe tu mensaje para el administrador de Punto Fino..."
+                  className="w-full bg-[#16181D] border border-white/15 focus:border-[#B89758] rounded-md px-3.5 py-2.5 text-sm text-white placeholder-[#6A6862] outline-none transition-colors resize-none"
+                />
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={contactLoading}
+                  className="bg-[#E15233] hover:bg-[#C44327] disabled:opacity-50 text-white font-sans font-semibold text-xs px-6 py-3 rounded-md inline-flex items-center gap-2 transition-all cursor-pointer"
+                >
+                  <Send size={14} />
+                  <span>{contactLoading ? 'Enviando mensaje...' : 'Enviar mensaje al administrador'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </section>

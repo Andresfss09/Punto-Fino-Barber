@@ -33,7 +33,6 @@ async function seedDashboardData() {
     const corteFade = services.find(s => s.name.includes('Corte') || s.name.includes('Fade')) || services[0];
     const barba = services.find(s => s.name.includes('Barba')) || services[0];
 
-    // 3. Eliminar citas de prueba creadas hoy para no duplicar si se ejecuta varias veces
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
@@ -46,14 +45,12 @@ async function seedDashboardData() {
 
     console.log('🧹 Citas de prueba previas limpiadas');
 
-    // 4. Crear Citas de Prueba para HOY y MAÑANA
     const testAppointments = [
       // --- JUAN DAVID (juandavid@puntofino.co) ---
       {
         confirmationCode: 'PF-01',
         barber: nicolasUser._id,
         clientName: 'Santiago Osorio',
-        clientPhone: '315 890 1234',
         clientEmail: 'santiago.osorio@gmail.com',
         clientAddress: 'Cra. 12 #53-51, Villacolombia',
         isGuest: true,
@@ -73,7 +70,6 @@ async function seedDashboardData() {
         confirmationCode: 'PF-02',
         barber: nicolasUser._id,
         clientName: 'Mateo Morales',
-        clientPhone: '310 456 7890',
         clientEmail: 'mateo.morales@gmail.com',
         clientAddress: 'Calle 44 #12-30, Cali',
         isGuest: true,
@@ -93,7 +89,6 @@ async function seedDashboardData() {
         confirmationCode: 'PF-03',
         barber: nicolasUser._id,
         clientName: 'David Bermúdez',
-        clientPhone: '318 765 4321',
         clientEmail: 'david.bermudez@gmail.com',
         clientAddress: 'Cra. 15 #50-20, Cali',
         isGuest: true,
@@ -113,7 +108,6 @@ async function seedDashboardData() {
         confirmationCode: 'PF-04',
         barber: nicolasUser._id,
         clientName: 'Alejandro Gómez',
-        clientPhone: '312 345 6789',
         clientEmail: 'alejandro.g@gmail.com',
         clientAddress: 'Calle 52 #10-15, Cali',
         isGuest: true,
@@ -133,11 +127,10 @@ async function seedDashboardData() {
         confirmationCode: 'PF-05',
         barber: nicolasUser._id,
         clientName: 'Camilo Torres',
-        clientPhone: '316 987 6543',
         clientEmail: 'camilo.torres@gmail.com',
         clientAddress: 'Cra. 8 #48-10, Cali',
         isGuest: true,
-        date: new Date(today.getTime() + 86400000), // Mañana
+        date: new Date(today.getTime() + 86400000),
         startTime: '11:00',
         endTime: '11:35',
         services: [{ service: expWhite._id, price: expWhite.price, duration: expWhite.duration }],
@@ -149,13 +142,11 @@ async function seedDashboardData() {
         commissionPaid: false,
         notes: 'Corte clásico + lavado.',
       },
-
       // --- EMANUEL TORRES (emanuel@puntofino.co) ---
       {
         confirmationCode: 'PF-06',
         barber: andresUser._id,
         clientName: 'Sebastián Pérez',
-        clientPhone: '314 234 5678',
         clientEmail: 'sebastian.p@gmail.com',
         clientAddress: 'Av. 6N #22-10, Cali',
         isGuest: true,
@@ -175,7 +166,6 @@ async function seedDashboardData() {
         confirmationCode: 'PF-07',
         barber: andresUser._id,
         clientName: 'Felipe Caicedo',
-        clientPhone: '317 345 6789',
         clientEmail: 'felipe.c@gmail.com',
         clientAddress: 'Calle 9 #44-12, Cali',
         isGuest: true,
@@ -195,7 +185,6 @@ async function seedDashboardData() {
         confirmationCode: 'PF-08',
         barber: andresUser._id,
         clientName: 'Daniel Rivas',
-        clientPhone: '311 456 7890',
         clientEmail: 'daniel.rivas@gmail.com',
         clientAddress: 'Cra. 1 #52-40, Cali',
         isGuest: true,
@@ -211,13 +200,11 @@ async function seedDashboardData() {
         commissionPaid: false,
         notes: 'Perfilado de barba con toalla tibia.',
       },
-
       // --- JUAN DIEGO (juandiego@puntofino.co) ---
       {
         confirmationCode: 'PF-09',
         barber: luisUser._id,
         clientName: 'Javier Mina',
-        clientPhone: '319 567 8901',
         clientEmail: 'javier.mina@gmail.com',
         clientAddress: 'Calle 50 #12-05, Cali',
         isGuest: true,
@@ -237,7 +224,6 @@ async function seedDashboardData() {
         confirmationCode: 'PF-10',
         barber: luisUser._id,
         clientName: 'Carlos Restrepo',
-        clientPhone: '313 678 9012',
         clientEmail: 'carlos.r@gmail.com',
         clientAddress: 'Cra. 11 #51-30, Cali',
         isGuest: true,
@@ -251,14 +237,13 @@ async function seedDashboardData() {
         paymentStatus: 'pendiente',
         paymentMethod: 'efectivo',
         commissionPaid: false,
-        notes: 'Pendiente de confirmación por WhatsApp.',
+        notes: 'Confirmación enviada por correo electrónico.',
       },
     ];
 
     const inserted = await Appointment.insertMany(testAppointments);
     console.log(`🎉 ${inserted.length} citas de prueba creadas exitosamente para testing de Dashboards.`);
 
-    // 5. Actualizar Barber stats
     await Barber.updateOne({ user: nicolasUser._id }, { commissionRate: 50, isAvailable: true });
     await Barber.updateOne({ user: andresUser._id }, { commissionRate: 50, isAvailable: true });
     await Barber.updateOne({ user: luisUser._id }, { commissionRate: 50, isAvailable: true });

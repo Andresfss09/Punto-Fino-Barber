@@ -58,7 +58,7 @@ export const BarberHomeScreen: React.FC = () => {
   const handleConfirmCheckout = (appointmentId: string, paymentMethod: string, tipsCOP: number, barberNotes?: string) => {
     localDB.checkoutOffline(appointmentId, paymentMethod, tipsCOP, barberNotes);
     loadAppointments();
-    Alert.alert('💵 Turno Cobrado', `Cobro registrado vía ${paymentMethod}. Ingreso sumado a caja y comisión del barbero.`);
+    Alert.alert('💵 Cita Cobrada', `Cobro registrado vía ${paymentMethod}. Ingreso sumado a caja y comisión del barbero.`);
   };
 
   // Forzar sincronización manual

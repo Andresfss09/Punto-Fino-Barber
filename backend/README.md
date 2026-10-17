@@ -41,13 +41,13 @@ Pobladas exitosamente en Neon PostgreSQL:
   - Correo: `admin@puntofino.com`
   - Contraseña: `PuntoFino2026!`
 - **Barbero (Silla #1):**
-  - Correo: `brayan@puntofino.com`
+  - Correo: `juandavid@puntofino.com`
   - Contraseña: `Barbero2026!`
 - **Barbero (Silla #2):**
-  - Correo: `carlos@puntofino.com`
+  - Correo: `emanuel@puntofino.com`
   - Contraseña: `Barbero2026!`
 - **Barbero (Silla #3):**
-  - Correo: `andres@puntofino.com`
+  - Correo: `juandiego@puntofino.com`
   - Contraseña: `Barbero2026!`
 
 ---

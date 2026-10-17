@@ -1,31 +1,58 @@
 import api from './api';
-import { isSupabaseConfigured } from './supabaseClient';
 
 export const adminService = {
-  // Obtener nómina, estadísticas y servicios recolectados
-  getPayrollStats: async (params) => {
-    if (isSupabaseConfigured()) {
-      return {
-        data: {
-          summary: { totalRevenue: 0, totalCommission: 0, netProfit: 0, totalAppointments: 0, activeBarbers: 0 },
-          barbersPayroll: [],
-          servicesBreakdown: [],
-          paymentMethods: { efectivo: 0, transferencia: 0, nequi: 0, daviplata: 0, otro: 0 },
-          appointments: []
-        }
-      };
-    }
-    return api.get('/admin/payroll-stats', { params });
+  getOverview: async () => {
+    const res = await api.get('/admin/overview');
+    return res?.data || res;
   },
 
-  // Registrar liquidación / pago de comisiones
+  getPayrollStats: async (params) => {
+    const res = await api.get('/admin/payroll', { params });
+    return res?.data || res;
+  },
+
+  approveSettlement: async (data) => {
+    const res = await api.post('/admin/payroll/approve', data);
+    return res?.data || res;
+  },
+
   payoutAppointments: (data) => api.put('/admin/payout', data),
 
-  // Actualizar comisión de un barbero
   updateBarberCommission: (barberId, commissionRate) =>
     api.put(`/admin/barbers/${barberId}/commission`, { commissionRate }),
 
-  // Obtener citas con paginación
+  updateBarberSalary: (barberId, baseSalaryCOP, productCommissionRate, commissionRate) =>
+    api.put(`/admin/barbers/${barberId}/salary`, { baseSalaryCOP, productCommissionRate, commissionRate }),
+
+  getSchedules: async () => {
+    const res = await api.get('/admin/schedules');
+    return res?.data || res;
+  },
+
+  updateSchedules: async (schedules) => {
+    const res = await api.put('/admin/schedules', { schedules });
+    return res?.data || res;
+  },
+
+  createScheduleException: async (data) => {
+    const res = await api.post('/admin/schedules/exceptions', data);
+    return res?.data || res;
+  },
+
+  deleteScheduleException: async (id) => {
+    const res = await api.delete(`/admin/schedules/exceptions/${id}`);
+    return res?.data || res;
+  },
+
+  openCashRegister: async (data) => {
+    const res = await api.post('/admin/cash/open', data);
+    return res?.data || res;
+  },
+
+  closeCashRegister: async (data) => {
+    const res = await api.post('/admin/cash/close', data);
+    return res?.data || res;
+  },
+
   getAllAppointments: (params) => api.get('/appointments', { params }),
 };
-

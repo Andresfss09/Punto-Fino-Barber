@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import Navbar from '../components/layout/Navbar';
 import HeroSection from '../components/home/HeroSection';
@@ -11,6 +11,8 @@ import PublicBookingView from './prototypes/PublicBookingView';
 
 export default function HomePage() {
   const location = useLocation();
+  const [preselectedBarber, setPreselectedBarber] = useState(null);
+  const [preselectedProduct, setPreselectedProduct] = useState(null);
 
   useEffect(() => {
     if (location.hash) {
@@ -26,35 +28,38 @@ export default function HomePage() {
   }, [location.hash]);
 
   return (
-    <div className="bg-[#0e1311]">
+    <div className="bg-[#0b0c0e]">
       <Navbar />
       <HeroSection />
       <ServicesSection />
-      <BeveragesSection />
+      <BeveragesSection onSelectBeverage={(prod) => setPreselectedProduct(prod)} />
 
       {/* Sección de Reserva directa en la página principal */}
-      <section id="reservar" className="py-24 sm:py-32 bg-[#000000] border-b border-[#1e1e1e] relative scroll-mt-24">
+      <section
+        id="reservar"
+        className="py-24 sm:py-32 bg-[#0b0c0e] border-b border-white/10 relative scroll-mt-24"
+      >
         <div className="max-w-[1400px] mx-auto px-4 sm:px-8 lg:px-12 relative z-10">
-          <div className="text-center mb-16">
-            <div className="flex items-center justify-center gap-2.5 mb-3">
-              <span className="w-2.5 h-2.5 bg-pf-terracota"></span>
-              <span className="font-mono text-xs uppercase tracking-[0.2em] text-pf-terracota font-bold">
-                RESERVA TU SILLA EN PUNTO FINO · VILLACOLOMBIA
-              </span>
-            </div>
-            <h2 className="font-display uppercase text-3xl sm:text-5xl text-pf-bone font-bold tracking-tight">
-              Agendá tu Turno
+          <div className="text-center mb-12">
+            <span className="font-sans text-xs text-[#E15233] font-semibold block mb-2">
+              Sede Villacolombia · Carrera 12 #53-51, Cali
+            </span>
+            <h2 className="font-display text-4xl sm:text-5xl text-white font-bold tracking-tight">
+              Agenda tu cita
             </h2>
-            <p className="text-pf-muted text-xs sm:text-sm max-w-xl mx-auto mt-2 font-sans leading-relaxed">
-              Elegí tu corte, tu barbero y tu horario. Proceso ágil y directo, sin registros ni apps para clientes.
+            <p className="text-[#9B988F] text-sm sm:text-base max-w-xl mx-auto mt-2 font-sans leading-relaxed">
+              Elige tu servicio, tu barbero y tu horario en tiempo real. Confirmación inmediata a tu correo electrónico sin crear cuentas ni contraseñas.
             </p>
           </div>
 
-          <PublicBookingView />
+          <PublicBookingView
+            preselectedBarber={preselectedBarber}
+            preselectedProduct={preselectedProduct}
+          />
         </div>
       </section>
 
-      <BarbersSection />
+      <BarbersSection onSelectBarber={(barber) => setPreselectedBarber(barber)} />
       <ReviewsSection />
       <LocationSection />
     </div>
